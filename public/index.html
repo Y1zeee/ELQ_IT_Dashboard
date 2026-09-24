@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<title>ELQ · Airport IT Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="assets/style.css"/>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar" id="topbar">
+<div class="topbar-in">
+
+  <!-- Logo row -->
+  <div class="nb-logo-row">
+    <div class="nb-logo" onclick="nav('home');closeDrawer()">
+      <div class="nb-logo-text">
+        <div class="nb-logo-name">SITA <span>Operation</span></div>
+      </div>
+    </div>
+
+    <div class="duty-panel" aria-live="polite">
+      <div class="duty-panel-head">
+        <div class="duty-panel-label"><span class="duty-live-dot"></span>ON DUTY</div>
+        <div class="nb-right">
+          <div class="nb-live"><span class="nb-live-dot"></span>LIVE</div>
+          <div class="nb-clock" id="clk">--:--:--</div>
+        </div>
+      </div>
+      <div class="duty-panel-person" id="duty-person">—</div>
+      <div class="duty-panel-shift" id="duty-shift">Loading current shift</div>
+    </div>
+
+    <!-- Mobile menu -->
+    <button class="nb-hamburger" id="nb-hamburger" onclick="toggleDrawer()">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+
+  <!-- Nav tabs row -->
+  <div class="nb-tabs">
+    <button class="nt on" onclick="nav('home');closeDrawer()"       data-page="home">Home</button>
+    <span class="nb-sep"></span>
+    <button class="nt"    onclick="nav('elq1');closeDrawer()"       data-page="elq1">ELQ-1</button>
+    <button class="nt"    onclick="nav('elq2');closeDrawer()"       data-page="elq2">ELQ-2</button>
+    <span class="nb-sep"></span>
+    <button class="nt"    onclick="nav('inventory');closeDrawer()"  data-page="inventory">Inventory</button>
+    <span class="nb-sep"></span>
+    <button class="nt"    onclick="nav('fids1');closeDrawer()"      data-page="fids1">FIDS · ELQ-1</button>
+    <button class="nt"    onclick="nav('fids2');closeDrawer()"      data-page="fids2">FIDS · ELQ-2</button>
+    <button class="nt"    onclick="nav('ports');closeDrawer()"      data-page="ports">Port Map</button>
+    <button class="nt"    onclick="nav('cabinets');closeDrawer()"   data-page="cabinets">Cabinets</button>
+  </div>
+
+</div>
+</div>
+
+<!-- Mobile drawer -->
+<div class="nb-drawer" id="t-drawer">
+  <div class="nb-drawer-label">Main</div>
+  <button class="nt" onclick="nav('home');closeDrawer()"      data-page="home">Home</button>
+  <div class="nb-drawer-label">Terminals</div>
+  <button class="nt" onclick="nav('elq1');closeDrawer()"      data-page="elq1">ELQ-1 — Terminal 1</button>
+  <button class="nt" onclick="nav('elq2');closeDrawer()"      data-page="elq2">ELQ-2 — Terminal 2</button>
+  <div class="nb-drawer-label">Assets</div>
+  <button class="nt" onclick="nav('inventory');closeDrawer()" data-page="inventory">Inventory</button>
+  <button class="nt" onclick="nav('fids1');closeDrawer()"     data-page="fids1">FIDS · ELQ-1 (LG)</button>
+  <button class="nt" onclick="nav('fids2');closeDrawer()"     data-page="fids2">FIDS · ELQ-2 (NEC)</button>
+  <div class="nb-drawer-label">Infrastructure</div>
+  <button class="nt" onclick="nav('ports');closeDrawer()"     data-page="ports">Port Map</button>
+  <button class="nt" onclick="nav('cabinets');closeDrawer()"  data-page="cabinets">Cabinets</button>
+  <button class="nt" onclick="nav('summary');closeDrawer()"   data-page="summary">Summary</button>
+</div>
+
+<!-- ══════════════════════════ HOME ══════════════════════════ -->
+<div class="pg on" id="pg-home" style="position:relative;">
+<canvas id="home-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.6;z-index:0;"></canvas>
+<div style="position:relative;z-index:1;">
+
+  <!-- Dashboard hero -->
+  <section class="dash-hero" aria-labelledby="dash-hero-title">
+    <div class="dash-hero-copy">
+      <div class="dash-hero-kicker"><span class="dash-hero-pulse"></span> AIRPORT IT OPERATIONS · LIVE NETWORK</div>
+      <h1 id="dash-hero-title">ELQ Airport</h1>
+      <p>One operational view for terminals, FIDS, workstations, cabinets, and network ports.</p>
+      <div class="dash-hero-meta">
+        <span><b>2</b> terminals</span>
+        <span><b>355</b> tracked assets</span>
+        <span><b>100%</b> indexed</span>
+      </div>
+      <div class="dash-hero-health">
+        <div><span>NETWORK HEALTH</span><b>96%</b></div>
+        <div class="dash-health-track"><span></span></div>
+      </div>
+    </div>
+    <div class="dash-hero-orbit" aria-hidden="true">
+      <div class="hero-orbit-ring hero-orbit-ring-a"></div>
+      <div class="hero-orbit-ring hero-orbit-ring-b"></div>
+      <div class="hero-orbit-core"><span>ELQ</span><small>ONLINE</small></div>
+      <div class="hero-plane" aria-hidden="true">✈</div>
+      <i class="hero-node hero-node-a"></i><i class="hero-node hero-node-b"></i><i class="hero-node hero-node-c"></i>
+    </div>
+  </section>
+
+  <!-- Hero metrics -->
+  <div class="mstrip ms5">
+    <div class="mcard" style="--mc-c:var(--blu)"><div class="mv">67</div><div class="ml">ELQ-1 Nodes</div><div class="ms">17 groups</div></div>
+    <div class="mcard" style="--mc-c:var(--tel)"><div class="mv">70</div><div class="ml">ELQ-2 Nodes</div><div class="ms">9 groups</div></div>
+    <div class="mcard" style="--mc-c:var(--pur)"><div class="mv">96</div><div class="ml">FIDS Screens</div><div class="ms">LG + NEC</div></div>
+    <div class="mcard" style="--mc-c:var(--amb)"><div class="mv">355</div><div class="ml">Total Assets</div><div class="ms">both terminals</div></div>
+    <div class="mcard" style="--mc-c:var(--grn)"><div class="mv">10</div><div class="ml">Switches</div><div class="ms">core + access</div></div>
+  </div>
+
+  <!-- Terminal cards -->
+  <p class="sl"><span class="sl-d" style="background:var(--blu)"></span>Terminals</p>
+  <div class="term-row">
+    <div class="tcard t1" onclick="nav('elq1')">
+      <div class="tcard-top"><span class="tbadge t1">ELQ-1</span><span class="tarr">→</span></div>
+      <div class="tcard-title">Terminal 1</div>
+      <div class="tcard-sub">17 device groups · 177 total assets</div>
+      <div class="tcard-stats">
+        <div class="tstat"><div class="tstat-v" style="color:var(--blu)">67</div><div class="tstat-l">Nodes</div></div>
+        <div class="tstat"><div class="tstat-v" style="color:var(--pur)">45</div><div class="tstat-l">FIDS</div></div>
+        <div class="tstat"><div class="tstat-v" style="color:var(--amb)">22</div><div class="tstat-l">WKS</div></div>
+        <div class="tstat"><div class="tstat-v" style="color:var(--grn)">4</div><div class="tstat-l">Cabinets</div></div>
+      </div>
+    </div>
+    <div class="tcard t2" onclick="nav('elq2')">
+      <div class="tcard-top"><span class="tbadge t2">ELQ-2</span><span class="tarr">→</span></div>
+      <div class="tcard-title">Terminal 2</div>
+      <div class="tcard-sub">9 device groups · 137 total assets</div>
+      <div class="tcard-stats">
+        <div class="tstat"><div class="tstat-v" style="color:var(--tel)">70</div><div class="tstat-l">Nodes</div></div>
+        <div class="tstat"><div class="tstat-v" style="color:var(--pur)">49</div><div class="tstat-l">FIDS</div></div>
+        <div class="tstat"><div class="tstat-v" style="color:var(--amb)">21</div><div class="tstat-l">WKS</div></div>
+        <div class="tstat"><div class="tstat-v" style="color:var(--grn)">3</div><div class="tstat-l">Cabinets</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick links -->
+  <p class="sl"><span class="sl-d" style="background:var(--t3)"></span>Quick access</p>
+  <div class="ql-grid">
+    <div class="ql" onclick="nav('inventory')"><div class="ql-icon" style="background:var(--amb-d);color:var(--amb)">📦</div><div><div class="ql-name">Inventory</div><div class="ql-count">355 assets</div></div></div>
+    <div class="ql" onclick="nav('fids1')"><div class="ql-icon" style="background:var(--pur-d);color:var(--pur)">📺</div><div><div class="ql-name">FIDS · ELQ-1</div><div class="ql-count">44 LG screens</div></div></div>
+    <div class="ql" onclick="nav('fids2')"><div class="ql-icon" style="background:var(--tel-d);color:var(--tel)">📺</div><div><div class="ql-name">FIDS · ELQ-2</div><div class="ql-count">49 NEC screens</div></div></div>
+    <div class="ql" onclick="nav('ports')"><div class="ql-icon" style="background:var(--blu-d);color:var(--blu)">🔌</div><div><div class="ql-name">Port Map</div><div class="ql-count">10 switches</div></div></div>
+    <div class="ql" onclick="nav('summary')"><div class="ql-icon" style="background:var(--s3);color:var(--t1)">📊</div><div><div class="ql-name">Summary</div><div class="ql-count">Equipment counts</div></div></div>
+    <div class="ql" onclick="nav('elq1')"><div class="ql-icon" style="background:var(--s3);color:var(--t1)">🔧</div><div><div class="ql-name">All Sections</div><div class="ql-count">Full detail</div></div></div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════ ELQ-1 ══════════════════════════ -->
+<div class="pg" id="pg-elq1">
+  <div class="bc">
+    <span class="bc-a" onclick="nav('home')">Home</span>
+    <span class="bc-sep">/</span>
+    <span class="bc-cur">ELQ-1 · Terminal 1</span>
+  </div>
+  <div class="mstrip ms4">
+    <div class="mcard" style="--mc-c:var(--blu)"><div class="mv">67</div><div class="ml">Total Nodes</div><div class="ms">17 groups</div></div>
+    <div class="mcard" style="--mc-c:var(--pur)"><div class="mv">45</div><div class="ml">FIDS Screens</div></div>
+    <div class="mcard" style="--mc-c:var(--amb)"><div class="mv">22</div><div class="ml">Workstations</div></div>
+    <div class="mcard" style="--mc-c:var(--grn)"><div class="mv">177</div><div class="ml">Total Assets</div></div>
+  </div>
+  <p class="sl"><span class="sl-d" style="background:var(--blu)"></span>Device groups — tap to browse nodes &amp; assets</p>
+  <div class="grp-grid" id="gg-e1"></div>
+</div>
+
+<!-- ══════════════════════════ ELQ-2 ══════════════════════════ -->
+<div class="pg" id="pg-elq2">
+  <div class="bc">
+    <span class="bc-a" onclick="nav('home')">Home</span>
+    <span class="bc-sep">/</span>
+    <span class="bc-cur">ELQ-2 · Terminal 2</span>
+  </div>
+  <div class="mstrip ms4">
+    <div class="mcard" style="--mc-c:var(--tel)"><div class="mv">70</div><div class="ml">Total Nodes</div><div class="ms">9 groups</div></div>
+    <div class="mcard" style="--mc-c:var(--pur)"><div class="mv">49</div><div class="ml">FIDS Screens</div></div>
+    <div class="mcard" style="--mc-c:var(--amb)"><div class="mv">21</div><div class="ml">Workstations</div></div>
+    <div class="mcard" style="--mc-c:var(--grn)"><div class="mv">137</div><div class="ml">Total Assets</div></div>
+  </div>
+  <p class="sl"><span class="sl-d" style="background:var(--tel)"></span>Device groups — tap to browse nodes &amp; assets</p>
+  <div class="grp-grid" id="gg-e2"></div>
+</div>
+
+<!-- ══════════════════════════ GROUP DETAIL ══════════════════════════ -->
+<div class="pg" id="pg-grp">
+  <div class="bc" id="grp-bc"></div>
+  <div class="mstrip ms3" id="grp-metrics"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+    <p class="sl" style="margin:0;flex:1"><span class="sl-d" id="grp-sl-dot"></span><span id="grp-sl-txt"></span></p>
+    <div class="bts">
+      <button class="btn btn-g" id="grp-xlsx-btn">⬇ Excel</button>
+      <button class="btn btn-b" id="grp-csv-btn">⬇ CSV</button>
+    </div>
+  </div>
+  <div class="bar">
+    <input type="text" id="grp-q" placeholder="Search node name, SN, model, type…" oninput="filterGrp()"/>
+  </div>
+  <div class="dev-list" id="grp-devlist"></div>
+  <div class="tf" id="grp-rc"></div>
+</div>
+
+<!-- ══════════════════════════ FIDS ELQ-1 ══════════════════════════ -->
+<div class="pg" id="pg-fids1">
+  <div class="bc"><span class="bc-a" onclick="nav('home')">Home</span><span class="bc-sep">/</span><span class="bc-cur">FIDS · ELQ-1</span></div>
+  <div class="card">
+    <div class="card-hdr">
+      <p class="card-title"><span class="cdot" style="background:var(--pur)"></span>FIDS ELQ-1 — LG Digital Signage · 44 screens</p>
+      <div class="bts"><button class="btn btn-g" onclick="xlsxF('f1')">⬇ Excel</button><button class="btn btn-b" onclick="csvF('f1')">⬇ CSV</button></div>
+    </div>
+    <div class="bar">
+      <input type="text" id="sf1" placeholder="Search node, SN, location…" oninput="rFids('f1')"/>
+      <select id="gf1" onchange="rFids('f1')"><option value="all">All groups</option></select>
+    </div>
+    <div id="fids1-sec"></div>
+    <div class="tf" id="rc-f1"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ FIDS ELQ-2 ══════════════════════════ -->
+<div class="pg" id="pg-fids2">
+  <div class="bc"><span class="bc-a" onclick="nav('home')">Home</span><span class="bc-sep">/</span><span class="bc-cur">FIDS · ELQ-2</span></div>
+  <div class="card">
+    <div class="card-hdr">
+      <p class="card-title"><span class="cdot" style="background:var(--tel)"></span>FIDS ELQ-2 — NEC · 49 screens</p>
+      <div class="bts"><button class="btn btn-g" onclick="xlsxF('f2')">⬇ Excel</button><button class="btn btn-b" onclick="csvF('f2')">⬇ CSV</button></div>
+    </div>
+    <div class="bar">
+      <input type="text" id="sf2" placeholder="Search node, SN, location…" oninput="rFids('f2')"/>
+      <select id="gf2" onchange="rFids('f2')"><option value="all">All groups</option></select>
+    </div>
+    <div id="fids2-sec"></div>
+    <div class="tf" id="rc-f2"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ PORT MAP ══════════════════════════ -->
+<div class="pg" id="pg-ports">
+  <div class="bc"><span class="bc-a" onclick="nav('home')">Home</span><span class="bc-sep">/</span><span class="bc-cur">Port Map</span></div>
+
+  <!-- Stats strip -->
+  <div class="mstrip ms4" style="margin-bottom:24px;">
+    <div class="mcard" style="--mc-c:var(--blu)"><div class="mv">10</div><div class="ml">Switches</div><div class="ms">ELQ-1</div></div>
+    <div class="mcard" style="--mc-c:var(--tel)"><div class="mv">5</div><div class="ml">Locations</div><div class="ms">Core · GACA · Elect · Admin</div></div>
+    <div class="mcard" style="--mc-c:var(--pur)"><div class="mv">96</div><div class="ml">FIDS nodes</div><div class="ms">mapped to switches</div></div>
+    <div class="mcard" style="--mc-c:var(--grn)"><div class="mv">3</div><div class="ml">ELQ-2 Comms</div><div class="ms">Comm Room distribution</div></div>
+  </div>
+
+  <!-- ELQ-1 Switches -->
+  <p class="sl"><span class="sl-d" style="background:var(--blu)"></span>ELQ-1 · Network Switches — Port Mapping</p>
+  <div id="pmg"></div>
+
+  <!-- FIDS Switch Mapping -->
+  <p class="sl" style="margin-top:8px;"><span class="sl-d" style="background:var(--pur)"></span>FIDS Switch Distribution — ELQ-1 &amp; ELQ-2</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div>
+      <div class="pm-section-hdr" style="--sec-c:var(--pur)">
+        <span class="pm-sec-icon">◈</span>
+        <div><div class="pm-sec-title">ELQ-1 FIDS</div><div class="pm-sec-sub">LG Digital Signage · admin &amp; field switches</div></div>
+      </div>
+      <div id="fm-e1"></div>
+    </div>
+    <div>
+      <div class="pm-section-hdr" style="--sec-c:var(--tel)">
+        <span class="pm-sec-icon">◈</span>
+        <div><div class="pm-sec-title">ELQ-2 FIDS</div><div class="pm-sec-sub">NEC · communication room distribution</div></div>
+      </div>
+      <div id="fm-e2"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ INVENTORY ══════════════════════════ -->
+<div class="pg" id="pg-inventory">
+  <div class="bc"><span class="bc-a" onclick="nav('home')">Home</span><span class="bc-sep">/</span><span class="bc-cur">Inventory</span></div>
+  <div class="mstrip ms3">
+    <div class="mcard" style="--mc-c:var(--blu)"><div class="mv">177</div><div class="ml">ELQ-1 Assets</div><div class="ms">22 groups</div></div>
+    <div class="mcard" style="--mc-c:var(--tel)"><div class="mv">137</div><div class="ml">ELQ-2 Assets</div><div class="ms">9 groups</div></div>
+    <div class="mcard" style="--mc-c:var(--amb)"><div class="mv">41</div><div class="ml">Spare Assets</div><div class="ms">BRS Arrival</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+    <div class="card"><div class="card-hdr"><p class="card-title"><span class="cdot" style="background:var(--blu)"></span>ELQ-1</p></div><div id="inv-b1"></div></div>
+    <div class="card"><div class="card-hdr"><p class="card-title"><span class="cdot" style="background:var(--tel)"></span>ELQ-2</p></div><div id="inv-b2"></div></div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><p class="card-title">Full inventory list</p><div class="bts"><button class="btn btn-g" onclick="xlsxInv()">⬇ Excel</button><button class="btn btn-b" onclick="csvInv()">⬇ CSV</button></div></div>
+    <div class="bar">
+      <input type="text" id="sinv" placeholder="Search…" oninput="rInv()"/>
+      <select id="ginv" onchange="rInv()"><option value="all">All</option><option value="ELQ-1">ELQ-1</option><option value="ELQ-2">ELQ-2</option><option value="Spare">Spare</option></select>
+    </div>
+    <div class="tw" style="max-height:380px;">
+      <table><thead><tr><th>TERMINAL</th><th>CATEGORY</th><th>LOCATION</th><th style="text-align:right">ASSETS</th></tr></thead>
+      <tbody id="tb-inv"></tbody></table>
+    </div>
+    <div class="tf" id="rc-inv"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ CABINETS ══════════════════════════ -->
+<div class="pg" id="pg-cabinets">
+  <div class="bc"><span class="bc-a" onclick="nav('home')">Home</span><span class="bc-sep">/</span><span class="bc-cur">Cabinets</span></div>
+  <section class="dash-hero cabinet-hero" aria-labelledby="cabinet-hero-title">
+    <div class="dash-hero-copy">
+      <div class="dash-hero-kicker"><span class="dash-hero-pulse"></span> ELQ AIRPORT IT · CABINET OPERATIONS</div>
+      <h1 id="cabinet-hero-title">Cabinet<br><span>Infrastructure</span></h1>
+      <p>Rack devices, core switches, and terminal infrastructure in one live operational view.</p>
+      <div class="dash-hero-meta">
+        <span><b>7</b> cabinets</span>
+        <span><b>42</b> devices</span>
+        <span><b>2</b> terminals</span>
+      </div>
+      <div class="dash-hero-health">
+        <div><span>CABINET READINESS</span><b>100%</b></div>
+        <div class="dash-health-track"><span></span></div>
+      </div>
+    </div>
+    <div class="dash-hero-orbit" aria-hidden="true">
+      <div class="hero-orbit-ring hero-orbit-ring-a"></div>
+      <div class="hero-orbit-ring hero-orbit-ring-b"></div>
+      <div class="hero-orbit-core"><span>ELQ</span><small>RACKS ONLINE</small></div>
+      <div class="hero-plane">✈</div>
+      <i class="hero-node hero-node-a"></i><i class="hero-node hero-node-b"></i><i class="hero-node hero-node-c"></i>
+    </div>
+  </section>
+  <div class="mstrip ms4">
+    <div class="mcard" style="--mc-c:var(--blu)"><div class="mv">42</div><div class="ml">Total devices</div></div>
+    <div class="mcard" style="--mc-c:var(--tel)"><div class="mv">7</div><div class="ml">Cabinets</div></div>
+    <div class="mcard" style="--mc-c:var(--pur)"><div class="mv">36</div><div class="ml">ELQ-1</div><div class="ms">4 cabinets</div></div>
+    <div class="mcard" style="--mc-c:var(--amb)"><div class="mv">6</div><div class="ml">ELQ-2</div><div class="ms">3 cabinets</div></div>
+  </div>
+  <p class="sl"><span class="sl-d" style="background:var(--blu)"></span>ELQ-1 Core Room 5 — Switches &amp; Servers</p>
+  <div class="card">
+    <div class="card-hdr"><p class="card-title">Cabinet equipment</p><div class="bts"><button class="btn btn-g" onclick="xlsxCabinets()">⬇ Excel</button><button class="btn btn-b" onclick="csvCabinets()">⬇ CSV</button></div></div>
+    <div class="tw" style="max-height:420px;">
+      <table id="cabinet-table"><thead><tr><th>ASSET TAG</th><th>NODE</th><th>SERIAL</th><th>EQUIPMENT TYPE</th><th>MODEL</th><th>ROOM</th></tr></thead>
+      <tbody>
+        <tr><td class="td-xid">XS30364038</td><td class="td-n">ELQ1-CSFW-01</td><td class="td-sn">BWS4SR3</td><td>Cisco Security Firewall</td><td>CISCO C9200-24T</td><td>Core Room</td></tr>
+        <tr><td class="td-xid">XS30364037</td><td class="td-n">ELQ1-CSFW-02</td><td class="td-sn">BWS8SR3</td><td>Cisco Security Firewall</td><td>CISCO C9200-24T</td><td>Core Room</td></tr>
+        <tr><td class="td-xid">XS30362796</td><td class="td-n">ELQ1-SSS-01</td><td class="td-sn">SFVH28162HTD</td><td>Core Switch</td><td>CISCO C9300-24T</td><td>Core Room 5</td></tr>
+        <tr><td class="td-xid">XS30362795</td><td class="td-n">ELQ1-SSS-02</td><td class="td-sn">SFVH2823L324</td><td>Core Switch</td><td>CISCO C9300-24T</td><td>Core Room 5</td></tr>
+        <tr><td class="td-xid">XS30362794</td><td class="td-n">ELQ1-SSS-03</td><td class="td-sn">SFH2423N333</td><td>Core Switch</td><td>CISCO C9200-24T</td><td>Core Room 5</td></tr>
+        <tr><td class="td-xid">XS30364460</td><td class="td-n">ELQ1-ESXI1</td><td class="td-sn">CZ24090217</td><td>Server</td><td>HPE DL380</td><td>Core Room 5</td></tr>
+        <tr><td class="td-xid">XS30364461</td><td class="td-n">ELQ1-ESXI2</td><td class="td-sn">CZ2404055Y</td><td>Server</td><td>HPE DL380</td><td>Core Room 5</td></tr>
+        <tr><td class="td-xid">XS30364462</td><td class="td-n">ELQ1-VASL</td><td class="td-sn">CZ2407055Y</td><td>Server</td><td>HPE StoreEasy 1460</td><td>Core Room 5</td></tr>
+        <tr><td class="td-xid">XS00939252</td><td class="td-n">ELQ1-PFMN01</td><td class="td-sn">CZ233301DX</td><td>Server</td><td>HP DL-380</td><td>Core Room 5</td></tr>
+        <tr><td class="td-xid">XS00939251</td><td class="td-n">ELQ1-PFMN02</td><td class="td-sn">CZ233301DY</td><td>Server</td><td>HP DL-380</td><td>Core Room 5</td></tr>
+        <tr><td class="td-xid">XS00939253</td><td class="td-n">ELQ1-Proxy</td><td class="td-sn">CZ23350D7C</td><td>Server</td><td>HP DL-160</td><td>Core Room 5</td></tr>
+        <tr><td class="td-xid">XS00939250</td><td class="td-n">ELQ1-SAN-01</td><td class="td-sn">ACV244W0Q3</td><td>SAN Storage</td><td>HPE MSA 2062</td><td>Core Room 5</td></tr>
+        <tr><td class="td-xid">XS00938035</td><td class="td-n">—</td><td class="td-sn">SPH1203902CX</td><td>Power Injector</td><td>CISCO 341-0257-0</td><td>Core Room 5</td></tr>
+        <tr><td class="td-xid">XS00938034</td><td class="td-n">—</td><td class="td-sn">SPH1203902CA</td><td>Power Injector</td><td>CISCO 341-0257-0</td><td>Core Room 5</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════ SUMMARY ══════════════════════════ -->
+<div class="pg" id="pg-summary">
+  <div class="bc"><span class="bc-a" onclick="nav('home')">Home</span><span class="bc-sep">/</span><span class="bc-cur">Summary</span></div>
+  <div class="card">
+    <div class="card-hdr"><p class="card-title">Equipment summary</p><div class="bts"><button class="btn btn-g" onclick="xlsxSum('cute')">⬇ Excel</button><button class="btn btn-b" onclick="csvSum('cute')">⬇ CSV</button></div></div>
+    <div class="tw"><table><thead><tr><th>NO.</th><th>TYPE</th><th>ONLINE</th><th>SPARE</th><th>TOTAL</th></tr></thead><tbody id="sum-cute"></tbody></table></div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><p class="card-title">PFM</p><div class="bts"><button class="btn btn-g" onclick="xlsxSum('pfm')">⬇ Excel</button><button class="btn btn-b" onclick="csvSum('pfm')">⬇ CSV</button></div></div>
+    <div class="tw"><table><thead><tr><th>NO.</th><th>TYPE</th><th>ONLINE</th><th>SPARE</th><th>TOTAL</th></tr></thead><tbody id="sum-pfm"></tbody></table></div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><p class="card-title">FIDS / AMS</p><div class="bts"><button class="btn btn-g" onclick="xlsxSum('fidsams')">⬇ Excel</button><button class="btn btn-b" onclick="csvSum('fidsams')">⬇ CSV</button></div></div>
+    <div class="tw"><table><thead><tr><th>NO.</th><th>TYPE</th><th>ONLINE</th><th>SPARE</th><th>TOTAL</th></tr></thead><tbody id="sum-fidsams"></tbody></table></div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><p class="card-title">E-Gates</p><div class="bts"><button class="btn btn-g" onclick="xlsxSum('egate')">⬇ Excel</button><button class="btn btn-b" onclick="csvSum('egate')">⬇ CSV</button></div></div>
+    <div class="tw"><table><thead><tr><th>NO.</th><th>TYPE</th><th>ONLINE</th><th>SPARE</th><th>TOTAL</th></tr></thead><tbody id="sum-egate"></tbody></table></div>
+  </div>
+</div>
+
+
+
+
+
+
+<script src="assets/app.js"></script>
+
+
+
+<!-- MODAL OVERLAY -->
+<div id="modal-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(4,8,16,.82);padding:20px;box-sizing:border-box;overflow-y:auto;align-items:flex-start;justify-content:center;" onclick="if(event.target===this)closeModal()">
+  <div id="modal-box" style="background:#0A1120;border:1px solid #254570;border-radius:14px;max-width:680px;margin:40px auto;overflow:hidden;font-family:Inter,system-ui,sans-serif;">
+    <div id="modal-head" style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:20px 24px;border-bottom:1px solid #1A3050;">
+      <div>
+        <div id="modal-title" style="font-size:15px;font-weight:700;color:#EAF2FF;margin-bottom:4px;">—</div>
+        <div id="modal-sub"   style="font-size:11px;color:#5A7A9A;">—</div>
+      </div>
+      <button onclick="closeModal()" style="font-size:16px;color:#5A7A9A;background:#162540;border:1px solid #1A3050;border-radius:7px;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+    </div>
+    <div style="padding:20px 24px;">
+      <div id="modal-info" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px;"></div>
+      <div id="modal-assets-lbl" style="font-size:10px;font-weight:600;font-family:'JetBrains Mono',monospace;color:#9BB4D0;letter-spacing:.07em;margin-bottom:10px;"></div>
+      <div style="overflow-x:auto;border:1px solid #1A3050;border-radius:8px;">
+        <table id="modal-table" style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr id="modal-thead" style="background:#162540;">
+            <th style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#9BB4D0;letter-spacing:.07em;text-align:left;padding:7px 11px;border-bottom:1px solid #1A3050;">#</th>
+            <th style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#9BB4D0;letter-spacing:.07em;text-align:left;padding:7px 11px;border-bottom:1px solid #1A3050;">TYPE</th>
+            <th style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#9BB4D0;letter-spacing:.07em;text-align:left;padding:7px 11px;border-bottom:1px solid #1A3050;">MODEL</th>
+            <th style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#9BB4D0;letter-spacing:.07em;text-align:left;padding:7px 11px;border-bottom:1px solid #1A3050;">SERIAL</th>
+            <th style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#9BB4D0;letter-spacing:.07em;text-align:left;padding:7px 11px;border-bottom:1px solid #1A3050;">ASSET TAG</th>
+          </tr></thead>
+          <tbody id="modal-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
