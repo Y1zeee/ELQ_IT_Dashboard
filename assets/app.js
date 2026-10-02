@@ -536,62 +536,102 @@ const E2_GROUPS = [
 
 
 
-// ─── MODAL ───
-function showNodeDetail(g, nodeName, assets) {
-  var ov = document.getElementById('modal-overlay');
-  if (!ov) return;
-  assets = Array.isArray(assets) ? assets : [];
-  var ip = assets.length ? assets[0].ip : '—';
+// ─── NODE DETAIL CARD ───
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function dashv(v){return (v&&v!=='—')?v:'—';}
 
-  document.getElementById('modal-title').textContent = nodeName;
-  document.getElementById('modal-title').style.color = g.color;
-  document.getElementById('modal-sub').textContent = g.name + ' · ' + g.desc + ' · ' + g.loc;
+// node → switch/port lookup (FIDS distribution)
+const NODE_SW = {};
+[FIDS_MAP_E1, FIDS_MAP_E2].forEach(function(map){
+  map.forEach(function(s){ s.nodes.forEach(function(n){ NODE_SW[n.node||n.dev] = {sw:s.sw, port:n.port}; }); });
+});
 
-  var info = '';
-  var pairs = [['IP ADDRESS',ip],['GROUP',g.name],['ASSETS',assets.length],
-               ['TERMINAL',curTerm],['LOCATION',g.loc],['TYPE',g.desc]];
-  pairs.forEach(function(p){
-    info += '<div style="background:#111E30;border:1px solid #1A3050;border-radius:8px;padding:10px 12px;">' +
-            '<div style="font-size:9px;font-weight:600;font-family:JetBrains Mono,monospace;color:#2A4060;letter-spacing:.07em;margin-bottom:4px;">' + p[0] + '</div>' +
-            '<div style="font-size:12px;font-weight:500;color:#EAF2FF;">' + p[1] + '</div></div>';
-  });
-  document.getElementById('modal-info').innerHTML = info;
-  document.getElementById('modal-assets-lbl').textContent = 'ASSET LIST — ' + assets.length + ' items';
-  document.getElementById('modal-assets-lbl').style.color = '#9BB4D0';
-
-  var hasLoc = assets.some(function(a){ return a.loc; });
-  document.getElementById('modal-thead').innerHTML =
-    '<th style="font-family:JetBrains Mono,monospace;font-size:9px;color:#9BB4D0;letter-spacing:.07em;text-align:left;padding:7px 11px;border-bottom:1px solid #1A3050;">#</th>' +
-    '<th style="font-family:JetBrains Mono,monospace;font-size:9px;color:#9BB4D0;letter-spacing:.07em;text-align:left;padding:7px 11px;border-bottom:1px solid #1A3050;">TYPE</th>' +
-    '<th style="font-family:JetBrains Mono,monospace;font-size:9px;color:#9BB4D0;letter-spacing:.07em;text-align:left;padding:7px 11px;border-bottom:1px solid #1A3050;">MODEL</th>' +
-    '<th style="font-family:JetBrains Mono,monospace;font-size:9px;color:#9BB4D0;letter-spacing:.07em;text-align:left;padding:7px 11px;border-bottom:1px solid #1A3050;">SERIAL</th>' +
-    '<th style="font-family:JetBrains Mono,monospace;font-size:9px;color:#9BB4D0;letter-spacing:.07em;text-align:left;padding:7px 11px;border-bottom:1px solid #1A3050;">ASSET TAG</th>' +
-    (hasLoc ? '<th style="font-family:JetBrains Mono,monospace;font-size:9px;color:#9BB4D0;letter-spacing:.07em;text-align:left;padding:7px 11px;border-bottom:1px solid #1A3050;">LOCATION</th>' : '');
-  var rows = assets.map(function(a, i){
-    return '<tr>' +
-      '<td style="padding:7px 11px;border-bottom:1px solid #1A3050;font-family:JetBrains Mono,monospace;font-size:9px;color:#829AB5;">' + (i+1) + '</td>' +
-      '<td style="padding:7px 11px;border-bottom:1px solid #1A3050;font-weight:500;color:#EAF2FF;">'  + (a.type  || '—') + '</td>' +
-      '<td style="padding:7px 11px;border-bottom:1px solid #1A3050;font-family:JetBrains Mono,monospace;font-size:11px;color:#A0B8D4;">' + (a.model || '—') + '</td>' +
-      '<td style="padding:7px 11px;border-bottom:1px solid #1A3050;font-family:JetBrains Mono,monospace;font-size:10px;color:#5A7A9A;">' + (a.sn    || '—') + '</td>' +
-      '<td style="padding:7px 11px;border-bottom:1px solid #1A3050;font-family:JetBrains Mono,monospace;font-size:9.5px;color:#9BB4D0;">' + (a.xid   || '—') + '</td>' +
-      (hasLoc ? '<td style="padding:7px 11px;border-bottom:1px solid #1A3050;font-size:10px;color:#9BB4D0;">' + (a.loc || '') + '</td>' : '') +
-      '</tr>';
-  }).join('');
-  document.getElementById('modal-tbody').innerHTML = rows || '<tr><td colspan="5" style="padding:16px 11px;color:#9BB4D0;text-align:center;">No asset records found</td></tr>';
-
-  ov.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
+function ndFact(label, val, mono){
+  var v = dashv(val);
+  return '<button type="button" class="nd-fact"' + (v==='—' ? ' disabled' : '') + ' onclick="copyFact(this)" title="Click to copy">' +
+    '<span class="nd-fl">' + label + '</span>' +
+    '<span class="nd-fv' + (mono ? ' mono' : '') + '">' + esc(v) + '</span></button>';
 }
 
-function closeModal() {
-  var ov = document.getElementById('modal-overlay');
-  if (ov) ov.style.display = 'none';
+function openNode(o){
+  var ov = document.getElementById('nd-overlay');
+  var card = document.getElementById('nd-card');
+  if (!ov || !card) return;
+  var assets = o.assets || [];
+  var one = assets.length === 1 ? assets[0] : null;
+  var sw = NODE_SW[o.name];
+  var facts = '';
+  if (one) {
+    facts += ndFact('Serial number', one.sn, 1) + ndFact('SITA tag', one.xid, 1) +
+             ndFact('Location', one.loc || o.loc) + ndFact('IP address', one.ip || o.ip, 1) +
+             ndFact('Model', one.model) + ndFact('Type', one.type);
+  } else {
+    facts += ndFact('IP address', o.ip, 1) + ndFact('Location', o.loc) +
+             ndFact('Group', o.group) + ndFact('Assets', String(assets.length));
+  }
+  if (sw) facts += ndFact('Switch', sw.sw, 1) + ndFact('Port', 'Port ' + sw.port, 1);
+  facts += ndFact('Terminal', o.term);
+
+  var list = '';
+  if (!one && assets.length) {
+    list = '<div class="nd-sec">ASSETS · ' + assets.length + '</div><div class="nd-assets">' +
+      assets.map(function(a){
+        return '<div class="nd-asset">' +
+          '<div class="nd-asset-top"><span class="nd-asset-type">' + esc(a.type||'—') + '</span><span class="nd-asset-model">' + esc(a.model||'—') + '</span></div>' +
+          '<div class="nd-asset-kv"><button type="button" onclick="copyFact(this)" ' + (dashv(a.sn)==='—'?'disabled':'') + '><i>SERIAL</i><b>' + esc(dashv(a.sn)) + '</b></button>' +
+          '<button type="button" onclick="copyFact(this)" ' + (dashv(a.xid)==='—'?'disabled':'') + '><i>SITA TAG</i><b>' + esc(dashv(a.xid)) + '</b></button></div>' +
+          '</div>';
+      }).join('') + '</div>';
+  }
+
+  card.style.setProperty('--c', o.color || 'var(--blu)');
+  card.innerHTML =
+    '<div class="nd-head">' +
+      '<div class="nd-badges"><span class="nd-badge">' + esc(o.group||'') + '</span><span class="nd-badge dim">' + esc(o.term||'') + '</span></div>' +
+      '<button type="button" class="nd-x" onclick="closeModal()" aria-label="Close">✕</button>' +
+      '<h2 id="nd-title">' + esc(o.name) + '</h2>' +
+      '<p>' + esc(o.desc||'') + '</p>' +
+    '</div>' +
+    '<div class="nd-body"><div class="nd-facts">' + facts + '</div>' + list + '</div>';
+  ov.classList.add('on');
+  document.body.style.overflow = 'hidden';
+  var x = card.querySelector('.nd-x'); if (x) x.focus();
+}
+
+function copyFact(btn){
+  var el = btn.querySelector('.nd-fv') || btn.querySelector('b');
+  if (!el) return;
+  var txt = el.textContent;
+  var done = function(){ btn.classList.add('copied'); setTimeout(function(){ btn.classList.remove('copied'); }, 900); };
+  try { navigator.clipboard.writeText(txt).then(done, function(){}); } catch (e) {}
+}
+
+function closeModal(){
+  var ov = document.getElementById('nd-overlay');
+  if (ov) ov.classList.remove('on');
   document.body.style.overflow = '';
 }
 
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function(e){
   if (e.key === 'Escape') closeModal();
 });
+
+// ─── PAGE HERO (reception banner shown on every page) ───
+function heroHTML(c){
+  return '<section class="dash-hero compact">' +
+    '<div class="dash-hero-copy">' +
+      '<div class="dash-hero-kicker"><span class="dash-hero-pulse"></span> ' + c.kicker + '</div>' +
+      '<h1>' + c.title + '</h1>' +
+      '<p>' + c.text + '</p>' +
+      '<div class="dash-hero-meta">' + c.meta.map(function(m){ return '<span><b>' + m[0] + '</b> ' + m[1] + '</span>'; }).join('') + '</div>' +
+    '</div>' +
+    '<div class="dash-hero-orbit" aria-hidden="true">' +
+      '<div class="hero-orbit-ring hero-orbit-ring-a"></div><div class="hero-orbit-ring hero-orbit-ring-b"></div>' +
+      '<div class="hero-orbit-core"><span>' + c.core + '</span><small>ONLINE</small></div>' +
+      '<div class="hero-plane">✈</div>' +
+      '<i class="hero-node hero-node-a"></i><i class="hero-node hero-node-b"></i><i class="hero-node hero-node-c"></i>' +
+    '</div></section>';
+}
 
 
 // ── Subtle tech particle animation on home page ──
@@ -696,7 +736,7 @@ function nav(id){
   if(pg) pg.classList.add('on');
   // Tabs — use data-page attribute for reliable matching
   document.querySelectorAll('.nt[data-page]').forEach(b=>{
-    b.classList.toggle('on', b.dataset.page===id);
+    b.classList.toggle('on', b.dataset.page===(id==='invterm'?'inventory':id));
   });
   window.scrollTo({top:0,behavior:'instant'});
 }
@@ -801,6 +841,8 @@ function openGrp(g,term){
     <span class="bc-a" onclick="nav('${term==='ELQ-1'?'elq1':'elq2'}')">${term}</span>
     <span class="bc-sep">/</span>
     <span class="bc-cur" style="color:${g.color}">${g.name}</span>`;
+  setHero('hero-grp',{kicker:`${term} · ${g.desc.toUpperCase()}`,title:g.name,core:g.name,
+    text:`${g.desc} — ${g.loc}.`,meta:[[g.nodes.length,'nodes'],[g.nodes.length*g.assetPer,'assets']]});
   // Metrics
   const totalA=g.nodes.length*g.assetPer;
   document.getElementById('grp-metrics').innerHTML=`
@@ -825,108 +867,133 @@ function filterGrp(){
 }
 
 // Node store
-var _nodeStore = {};
+var _grpNodes = [];
+
+function typeChips(assets){
+  var tc = {};
+  assets.forEach(function(a){ var t = a.type || '—'; tc[t] = (tc[t]||0) + 1; });
+  var ents = Object.keys(tc);
+  var out = ents.slice(0,2).map(function(t){
+    return '<span class="nc-chip" title="' + esc(t) + '">' + esc(t) + (tc[t] > 1 ? ' ×' + tc[t] : '') + '</span>';
+  }).join('');
+  if (ents.length > 2) out += '<span class="nc-chip more">+' + (ents.length - 2) + '</span>';
+  return out;
+}
 
 function renderGrp(g, q) {
   var list = document.getElementById('grp-devlist');
   if (!list) return;
   list.innerHTML = '';
-  _nodeStore = {};
+  _grpNodes = [];
   var shown = 0;
   var qLow = q ? q.toLowerCase() : '';
 
-  g.nodes.forEach(function(nodeName, ni) {
+  g.nodes.forEach(function(nodeName) {
     var assets = g.getA(nodeName);
     var ip = assets.length ? assets[0].ip : '—';
-
     var matched = !qLow
       || nodeName.toLowerCase().indexOf(qLow) >= 0
+      || (ip||'').toLowerCase().indexOf(qLow) >= 0
       || assets.some(function(a) {
            return (a.sn||'').toLowerCase().indexOf(qLow) >= 0
+               || (a.xid||'').toLowerCase().indexOf(qLow) >= 0
                || (a.type||'').toLowerCase().indexOf(qLow) >= 0
-               || (a.model||'').toLowerCase().indexOf(qLow) >= 0;
+               || (a.model||'').toLowerCase().indexOf(qLow) >= 0
+               || (a.loc||'').toLowerCase().indexOf(qLow) >= 0;
          });
     if (!matched) return;
     shown++;
 
-    // Build card
-    var assetRowsHtml = assets.map(function(a) {
-      return '<div class="gnc-asset-row">' +
-        '<div class="gnc-asset-type">' + (a.type || '—') + '</div>' +
-        '<div class="gnc-asset-model">' + (a.model || '—') + '</div>' +
-        '<div class="gnc-asset-meta"><span>' + (a.sn || '—') + '</span><span>' + (a.xid || '—') + '</span></div>' +
-        '</div>';
-    }).join('');
-
-    var card = document.createElement('div');
-    card.className = 'grp-node-card';
-    card.style.cssText = 'border-left-color:' + g.color + ';';
+    var idx = _grpNodes.push({
+      name:nodeName, color:g.color, group:g.name, desc:g.desc, loc:g.loc, term:curTerm, ip:ip, assets:assets
+    }) - 1;
+    var single = assets.length === 1 ? assets[0] : null;
+    var card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'nc';
+    card.style.setProperty('--c', g.color);
+    card.setAttribute('onclick', 'openNode(_grpNodes[' + idx + '])');
     card.innerHTML =
-      '<div class="gnc-top">' +
-        '<div>' +
-          '<div class="gnc-name">' + nodeName + '</div>' +
-          '<div class="gnc-ip">' + ip + '</div>' +
-        '</div>' +
-        '<div class="gnc-count" style="color:' + g.color + '">' + assets.length + '<span>assets</span></div>' +
-      '</div>' +
-      '<div class="gnc-assets">' + assetRowsHtml + '</div>' +
-      '<div class="gnc-foot">' +
-        '<span class="gnc-loc">' + g.loc + '</span>' +
-      '</div>';
-
+      '<div class="nc-top"><span class="nc-name">' + esc(nodeName) + '</span><span class="nc-n">' + assets.length + '</span></div>' +
+      '<div class="nc-ip">' + esc(ip) + '</div>' +
+      '<div class="nc-chips">' + (single && single.loc ? '<span class="nc-chip loc">' + esc(single.loc) + '</span>' : typeChips(assets)) + '</div>';
     list.appendChild(card);
   });
 
   var rc = document.getElementById('grp-rc');
-  if (rc) rc.textContent = 'Showing ' + shown + ' of ' + g.nodes.length + ' nodes';
+  if (rc) rc.textContent = 'Showing ' + shown + ' of ' + g.nodes.length + ' nodes · tap a card for details';
 }
-
-
-function _unused_openNodeModal(key) {
-  var entry = _nodeStore[key];
-  if (!entry) { console.error('No entry for key:', key); return; }
-  showNodeDetail(entry.g, entry.nodeName, entry.assets);
-}
-
 
 // ─────────────────────────────────────────
 //  FIDS
 // ─────────────────────────────────────────
+var FIDS_OPEN = {f1:new Set(), f2:new Set()};
+var _fidsNodes = {f1:[], f2:[]};
+const FIDS_BY_NODE = {};
+FIDS1.concat(FIDS2).forEach(function(r){ FIDS_BY_NODE[r.node] = r; });
+
 ['f1','f2'].forEach(s=>{
   const data=s==='f1'?FIDS1:FIDS2;
   const sel=document.getElementById('g'+s);
   [...new Set(data.map(d=>d.group))].sort().forEach(g=>{const o=document.createElement('option');o.value=g;o.textContent=g;sel.appendChild(o);});
 });
+
+function fidsGroupInfo(s, key){
+  var arr = s==='f1' ? E1_GROUPS : E2_GROUPS;
+  return arr.find(function(g){ return g.name === key; }) || {color:'#9D7EF7', desc:key+' display controllers'};
+}
+
+function toggleFidsGrp(s, key){
+  var set = FIDS_OPEN[s];
+  if (set.has(key)) set.delete(key); else set.add(key);
+  rFids(s);
+}
+function fidsAll(s, open){
+  var data = s==='f1' ? FIDS1 : FIDS2;
+  FIDS_OPEN[s] = new Set(open ? data.map(function(d){ return d.group; }) : []);
+  rFids(s);
+}
+function openFidsNode(s,i){ openNode(_fidsNodes[s][i]); }
+
 function rFids(s){
   const data=s==='f1'?FIDS1:FIDS2;
+  const term=s==='f1'?'ELQ-1':'ELQ-2';
   const q=(document.getElementById('s'+s).value||'').toLowerCase();
   const gv=document.getElementById('g'+s).value;
   const cont=document.getElementById(`fids${s==='f1'?1:2}-sec`);
-  cont.innerHTML='';
   const grouped={};
+  _fidsNodes[s] = [];
   data.filter(d=>{
     if(gv!=='all'&&d.group!==gv)return false;
-    if(q&&!d.node.toLowerCase().includes(q)&&!d.sn.toLowerCase().includes(q)&&!d.loc.toLowerCase().includes(q)&&!(d.xid||'').toLowerCase().includes(q))return false;
+    if(q&&!d.node.toLowerCase().includes(q)&&!d.sn.toLowerCase().includes(q)&&!d.loc.toLowerCase().includes(q)&&!(d.xid||'').toLowerCase().includes(q)&&!(d.ip||'').includes(q))return false;
     return true;
   }).forEach(d=>{if(!grouped[d.group])grouped[d.group]=[];grouped[d.group].push(d);});
-  let tot=0;
-  const c=s==='f1'?'var(--pur)':'var(--tel)';
+  let tot=0, html='';
   Object.entries(grouped).forEach(([gk,rows])=>{
     tot+=rows.length;
-    cont.innerHTML+=`<div class="fb">
-      <div class="fb-hdr">
-        <span class="fb-name" style="color:${c}">${gk}</span>
-        <span class="fb-info" style="margin-left:8px">${rows[0]?.loc||''}</span>
-        <span class="badge ${s==='f1'?'bp':'bt'}" style="margin-left:auto">${rows.length}</span>
-      </div>
-      <div class="tw" style="max-height:220px;border-radius:0 0 var(--r8) var(--r8)">
-        <table><thead><tr><th>ASSET TAG</th><th>NODE</th><th>IP ADDRESS</th><th>SERIAL</th><th>MODEL</th><th>LOCATION</th></tr></thead>
-        <tbody>${rows.map(d=>`<tr><td class="td-xid">${d.xid||'—'}</td><td class="td-n">${d.node}</td><td class="td-ip">${d.ip}</td><td class="td-sn">${d.sn}</td><td style="color:var(--t1)">${d.model}</td><td style="color:var(--t1)">${d.loc}</td></tr>`).join('')}</tbody>
-        </table>
-      </div>
+    const gi=fidsGroupInfo(s,gk);
+    const open=q||gv!=='all'||FIDS_OPEN[s].has(gk);
+    const cards=open?rows.map(d=>{
+      const i=_fidsNodes[s].push({name:d.node,color:gi.color,group:gk,desc:gi.desc,loc:d.loc,term:term,ip:d.ip,
+        assets:[{ip:d.ip,xid:d.xid,sn:d.sn,type:'FIDS Screen',model:d.model,loc:d.loc}]})-1;
+      return `<button type="button" class="nc" style="--c:${gi.color}" onclick="openFidsNode('${s}',${i})">
+        <div class="nc-top"><span class="nc-name">${esc(d.node)}</span></div>
+        <div class="nc-ip">${esc(d.ip)}</div>
+        <div class="nc-chips"><span class="nc-chip loc">${esc(d.loc)}</span></div></button>`;
+    }).join(''):'';
+    html+=`<div class="fsec${open?' open':''}" style="--c:${gi.color}">
+      <button type="button" class="fsec-hdr" onclick="toggleFidsGrp('${s}','${gk}')" aria-expanded="${open?'true':'false'}">
+        <span class="fsec-bar"></span>
+        <span class="fsec-name">${gk}</span>
+        <span class="fsec-desc">${esc(gi.desc)}</span>
+        <span class="fsec-count">${rows.length}</span>
+        <span class="fsec-chev">▾</span>
+      </button>
+      ${open?`<div class="nc-grid fsec-body">${cards}</div>`:''}
     </div>`;
   });
-  document.getElementById(`rc-${s}`).textContent=`${tot} screens`;
+  cont.innerHTML=html||'<div class="empty-note">No screens match your search.</div>';
+  document.getElementById(`rc-${s}`).textContent=`${tot} screens · tap a card for serial, SITA tag & location`;
 }
 rFids('f1'); rFids('f2');
 
@@ -1037,67 +1104,155 @@ function buildPortMap() {
 }
 buildPortMap();
 
-// FIDS MAP renderer
-function buildFm(id, data, color) {
+// FIDS MAP renderer — one card per switch, one tile per node (tap for details)
+var _fmNodes = [];
+function openFmNode(i){ openNode(_fmNodes[i]); }
+function buildFm(id, data, color, term, groupsArr) {
   const el = document.getElementById(id);
-  el.innerHTML = '';
+  let html = '';
   data.forEach(s => {
-    const rows = s.nodes.map(n => `
-      <div class="pm-fids-row">
-        <span class="pm-fids-pt">${n.port||'—'}</span>
-        <span class="pm-fids-node">${n.node||n.dev||'—'}</span>
-        <span class="pm-fids-ip">${n.ip||''}</span>
-      </div>`).join('');
-    el.innerHTML += `
-      <div class="pm-fids-card" style="--fids-c:${color}">
-        <div class="pm-fids-hdr">
-          <div class="pm-fids-accent"></div>
-          <div class="pm-fids-info">
-            <div class="pm-fids-sw">${s.sw}</div>
-            <div class="pm-fids-room">${s.room}</div>
-          </div>
-          <span class="pm-fids-badge badge" style="background:${color}18;color:${color};border:1px solid ${color}30;">${s.nodes.length} nodes</span>
+    const tiles = s.nodes.map(n => {
+      const name = n.node || n.dev || '—';
+      const r = FIDS_BY_NODE[name] || {};
+      const gname = (name.match(/-([A-Z]{2}-DDC)/) || [])[1] || 'DDC';
+      const gi = groupsArr.find(g => g.name === gname) || {color:color, desc:'Display controller'};
+      const i = _fmNodes.push({name:name, color:gi.color, group:gname, desc:gi.desc, loc:n.loc||r.loc, term:term, ip:n.ip||r.ip,
+        assets:[{ip:n.ip||r.ip, xid:r.xid, sn:r.sn, type:'FIDS Screen', model:r.model, loc:n.loc||r.loc}]}) - 1;
+      return `<button type="button" class="pf-tile" onclick="openFmNode(${i})">
+        <span class="pf-port">${n.port||'—'}</span>
+        <span class="pf-txt"><b>${esc(name)}</b><i>${esc(n.loc||r.loc||'')}</i></span>
+      </button>`;
+    }).join('');
+    html += `
+      <div class="pf-card" style="--c:${color}">
+        <div class="pf-hdr">
+          <div><div class="pf-sw">${esc(s.sw)}</div><div class="pf-room">${esc(s.room)}</div></div>
+          <span class="pf-count">${s.nodes.length} nodes</span>
         </div>
-        <div class="pm-fids-rows">${rows}</div>
+        <div class="pf-tiles">${tiles}</div>
       </div>`;
   });
+  el.innerHTML = html;
 }
-buildFm('fm-e1', FIDS_MAP_E1, '#9D7EF7');
-buildFm('fm-e2', FIDS_MAP_E2, '#1FD8C8');
+buildFm('fm-e1', FIDS_MAP_E1, '#9D7EF7', 'ELQ-1', E1_GROUPS);
+buildFm('fm-e2', FIDS_MAP_E2, '#1FD8C8', 'ELQ-2', E2_GROUPS);
 
 
 // ─────────────────────────────────────────
-//  INVENTORY BARS
+//  INVENTORY — two big terminal cards → category cards
 // ─────────────────────────────────────────
-function mkInvBars(id,data,color){
-  const el=document.getElementById(id);
-  if(!el)return;
-  const max=Math.max(...data.map(d=>d.assets));
-  [...data].sort((a,b)=>b.assets-a.assets).forEach(d=>{
-    const p=Math.round(d.assets/max*100);
-    el.innerHTML+=`<div class="br"><span class="br-l">${d.cat}</span><div class="br-t"><div class="br-f" style="width:${p}%;background:${color}"></div></div><span class="br-v">${d.assets}</span><span class="br-d">${d.loc}</span></div>`;
-  });
+const INV_TERMS = {
+  'ELQ-1': {data:INV_E1, groups:E1_GROUPS, color:'#59C7FF', title:'Terminal 1', cls:'t1'},
+  'ELQ-2': {data:INV_E2, groups:E2_GROUPS, color:'#2CE0D0', title:'Terminal 2', cls:'t2'}
+};
+const CORE_CAT_DESC = {'CSF-W':'Cisco Security Firewall','SSS':'Core Switches','ESXI':'ESXi Servers','VASL':'Storage Server',
+  'PFMN':'PFM Servers','SAN':'SAN Storage','PROXY':'Proxy Server','BOC':'Back Office Computer'};
+const invSum = d => d.reduce((a,x)=>a+x.assets,0);
+function invGroup(term,cat){
+  const name = cat==='EGATE' ? 'PFM' : cat;
+  return INV_TERMS[term].groups.find(g=>g.name.toUpperCase()===name);
 }
-mkInvBars('inv-b1',INV_E1,'var(--blu)');
-mkInvBars('inv-b2',INV_E2,'var(--tel)');
 
-function rInv(){
-  const q=(document.getElementById('sinv').value||'').toLowerCase();
-  const tf=document.getElementById('ginv').value;
-  const all=[...INV_E1.map(d=>({...d,term:'ELQ-1'})),...INV_E2.map(d=>({...d,term:'ELQ-2'})),...INV_SPARE.map(d=>({...d,term:'Spare'}))].filter(d=>{
-    if(tf!=='all'&&d.term!==tf)return false;
-    if(q&&!d.cat.toLowerCase().includes(q)&&!d.loc.toLowerCase().includes(q))return false;
-    return true;
-  });
-  document.getElementById('tb-inv').innerHTML=all.map(d=>`<tr>
-    <td><span class="badge ${d.term==='ELQ-1'?'bb':d.term==='ELQ-2'?'bt':'ba'}">${d.term}</span></td>
-    <td class="td-n">${d.cat}</td>
-    <td style="color:var(--t1)">${d.loc}</td>
-    <td style="text-align:right;font-family:var(--mono);font-weight:700;color:var(--t0)">${d.assets}</td>
-  </tr>`).join('');
-  document.getElementById('rc-inv').textContent=`${all.length} groups`;
+function buildInvCards(){
+  const el = document.getElementById('inv-cards');
+  if(!el) return;
+  el.innerHTML = Object.entries(INV_TERMS).map(([term,t])=>{
+    const tot = invSum(t.data);
+    const sorted = [...t.data].sort((a,b)=>b.assets-a.assets);
+    const stack = sorted.slice(0,8).map((d,i)=>`<i style="width:${d.assets/tot*100}%;opacity:${1-i*.09}"></i>`).join('');
+    const legend = sorted.slice(0,6).map(d=>`<span><b>${d.assets}</b> ${d.cat}</span>`).join('');
+    return `<div class="inv-big ${t.cls}" style="--c:${t.color}" role="button" tabindex="0" onclick="openInvTerm('${term}')" onkeydown="if(event.key==='Enter')openInvTerm('${term}')">
+      <div class="tcard-top"><span class="tbadge ${t.cls}">${term}</span><span class="tarr">→</span></div>
+      <div class="inv-big-title">${t.title} Inventory</div>
+      <div class="inv-big-num">${tot}<span>assets</span></div>
+      <div class="inv-big-sub">${t.data.length} categories · tap to browse each one</div>
+      <div class="inv-stack">${stack}</div>
+      <div class="inv-legend">${legend}</div>
+    </div>`;
+  }).join('');
+  const sp = document.getElementById('inv-spare');
+  if(sp) sp.innerHTML = INV_SPARE.map(d=>`<div class="inv-spare"><span class="badge ba">SPARE</span><b>${d.assets}</b> assets in stock <i>· ${d.loc}</i></div>`).join('');
 }
-rInv();
+
+var curInvTerm = null;
+function openInvTerm(term){
+  curInvTerm = term;
+  const t = INV_TERMS[term];
+  document.getElementById('invt-bc').innerHTML = `
+    <span class="bc-a" onclick="nav('home')">Home</span><span class="bc-sep">/</span>
+    <span class="bc-a" onclick="nav('inventory')">Inventory</span><span class="bc-sep">/</span>
+    <span class="bc-cur" style="color:${t.color}">${term}</span>`;
+  setHero('hero-invterm', {kicker:`${term} · INVENTORY`, title:`${term} Inventory`, core:term,
+    text:`Every category in ${t.title}, with its location and asset count.`,
+    meta:[[invSum(t.data),'assets'],[t.data.length,'categories']]});
+  document.getElementById('invt-q').value = '';
+  renderInvTerm();
+  nav('invterm');
+}
+
+function renderInvTerm(){
+  if(!curInvTerm) return;
+  const t = INV_TERMS[curInvTerm];
+  const q = (document.getElementById('invt-q').value||'').toLowerCase();
+  const max = Math.max(...t.data.map(d=>d.assets));
+  const rows = t.data.filter(d=>!q||d.cat.toLowerCase().includes(q)||d.loc.toLowerCase().includes(q));
+  document.getElementById('invt-grid').innerHTML = rows.map(d=>{
+    const g = invGroup(curInvTerm,d.cat);
+    const core = CORE_CAT_DESC[d.cat];
+    const color = g ? g.color : t.color;
+    const desc = g ? g.desc : (core || d.cat);
+    const click = g ? `openGrp(INV_TERMS['${curInvTerm}'].groups.find(x=>x.key==='${g.key}'),'${curInvTerm}')` : (core ? "nav('cabinets')" : '');
+    return `<div class="cat-card${click?' go':''}" style="--c:${color}" ${click?`role="button" tabindex="0" onclick="${click}" onkeydown="if(event.key==='Enter'){${click}}"`:''}>
+      <div class="cat-top"><span class="cat-name">${d.cat}</span><span class="cat-num">${d.assets}</span></div>
+      <div class="cat-desc">${esc(desc)}</div>
+      <div class="cat-loc">${esc(d.loc)}</div>
+      <div class="cat-bar"><i style="width:${Math.max(4,d.assets/max*100)}%"></i></div>
+      <div class="cat-foot"><span>${g?g.nodes.length+' nodes':(core?'Core room':'—')}</span><span>${click?(g?'Browse →':'Cabinets →'):''}</span></div>
+    </div>`;
+  }).join('') || '<div class="empty-note">No categories match.</div>';
+  document.getElementById('invt-rc').textContent = `${rows.length} of ${t.data.length} categories`;
+}
+
+// ─────────────────────────────────────────
+//  HERO BANNERS (shown on every page)
+// ─────────────────────────────────────────
+function setHero(id, cfg){ const el=document.getElementById(id); if(el) el.innerHTML = heroHTML(cfg); }
+const fidsGroups = d => new Set(d.map(x=>x.group)).size;
+const PAGE_HEROES = {
+  elq1:{kicker:'TERMINAL 1 · LIVE NETWORK', title:'ELQ-1', core:'ELQ-1',
+    text:'Check-in, gates, FIDS and core room assets for Terminal 1.', meta:[[67,'nodes'],[177,'assets'],[FIDS1.length,'FIDS screens']]},
+  elq2:{kicker:'TERMINAL 2 · LIVE NETWORK', title:'ELQ-2', core:'ELQ-2',
+    text:'Check-in, gates, FIDS and public area assets for Terminal 2.', meta:[[70,'nodes'],[137,'assets'],[FIDS2.length,'FIDS screens']]},
+  fids1:{kicker:'FIDS · ELQ-1', title:'FIDS<br><span>Terminal 1</span>', core:'FIDS',
+    text:'LG digital signage controllers across check-in, gates and arrivals.', meta:[[FIDS1.length,'screens'],[fidsGroups(FIDS1),'groups'],['LG','signage']]},
+  fids2:{kicker:'FIDS · ELQ-2', title:'FIDS<br><span>Terminal 2</span>', core:'FIDS',
+    text:'NEC display controllers across check-in, departures and arrivals.', meta:[[FIDS2.length,'screens'],[fidsGroups(FIDS2),'groups'],['NEC','signage']]},
+  ports:{kicker:'NETWORK · SWITCH MAPPING', title:'Port<br><span>Map</span>', core:'NET',
+    text:'Which device is plugged into which switch port, per room and terminal.', meta:[[10,'switches'],[FIDS1.length+FIDS2.length,'FIDS nodes mapped']]},
+  inventory:{kicker:'ASSET REGISTER', title:'Inventory', core:'INV',
+    text:'Every tracked asset in both terminals, organised by category.', meta:[[355,'assets'],[2,'terminals'],[41,'spare']]},
+  summary:{kicker:'EQUIPMENT COUNTS', title:'Summary', core:'SUM',
+    text:'Online and spare equipment totals by system.', meta:[[4,'systems']]}
+};
+function initHeroes(){
+  Object.entries(PAGE_HEROES).forEach(([k,c])=>{
+    const bc = document.querySelector('#pg-'+k+' .bc');
+    if(bc) bc.insertAdjacentHTML('afterend','<div class="page-hero">'+heroHTML(c)+'</div>');
+  });
+}
+initHeroes();
+
+// ─────────────────────────────────────────
+//  HOME — terminal card summaries
+// ─────────────────────────────────────────
+function fillTermCats(){
+  [['tc-cats-1',INV_E1],['tc-cats-2',INV_E2]].forEach(([id,d])=>{
+    const el=document.getElementById(id); if(!el) return;
+    el.innerHTML=[...d].sort((a,b)=>b.assets-a.assets).slice(0,6).map(x=>`<span><b>${x.assets}</b> ${x.cat}</span>`).join('');
+  });
+}
+fillTermCats();
+buildInvCards();
 
 // ─────────────────────────────────────────
 //  SUMMARY
@@ -1190,7 +1345,7 @@ setTimeout(updateDrawerTop, 200);
   });
 
   // Hover: scale ring
-  var hoverSel='button,a,[onclick],.grp,.grp-node-card,.tcard,.ql,.mcard,.nt';
+  var hoverSel='button,a,[onclick],.grp,.nc,.pf-tile,.cat-card,.inv-big,.fsec-hdr,.tcard,.ql,.mcard,.nt';
   document.addEventListener('mouseover',function(e){
     if(e.target.closest(hoverSel)){
       ring.style.width='42px'; ring.style.height='42px';
