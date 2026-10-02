@@ -126,6 +126,8 @@
         <div class="tstat"><div class="tstat-v" style="color:var(--amb)">22</div><div class="tstat-l">WKS</div></div>
         <div class="tstat"><div class="tstat-v" style="color:var(--grn)">4</div><div class="tstat-l">Cabinets</div></div>
       </div>
+      <div class="tcard-cats-l">TOP CATEGORIES</div>
+      <div class="tcard-cats" id="tc-cats-1"></div>
     </div>
     <div class="tcard t2" onclick="nav('elq2')">
       <div class="tcard-top"><span class="tbadge t2">ELQ-2</span><span class="tarr">→</span></div>
@@ -137,18 +139,20 @@
         <div class="tstat"><div class="tstat-v" style="color:var(--amb)">21</div><div class="tstat-l">WKS</div></div>
         <div class="tstat"><div class="tstat-v" style="color:var(--grn)">3</div><div class="tstat-l">Cabinets</div></div>
       </div>
+      <div class="tcard-cats-l">TOP CATEGORIES</div>
+      <div class="tcard-cats" id="tc-cats-2"></div>
     </div>
   </div>
 
   <!-- Quick links -->
   <p class="sl"><span class="sl-d" style="background:var(--t3)"></span>Quick access</p>
   <div class="ql-grid">
-    <div class="ql" onclick="nav('inventory')"><div class="ql-icon" style="background:var(--amb-d);color:var(--amb)">📦</div><div><div class="ql-name">Inventory</div><div class="ql-count">355 assets</div></div></div>
-    <div class="ql" onclick="nav('fids1')"><div class="ql-icon" style="background:var(--pur-d);color:var(--pur)">📺</div><div><div class="ql-name">FIDS · ELQ-1</div><div class="ql-count">44 LG screens</div></div></div>
-    <div class="ql" onclick="nav('fids2')"><div class="ql-icon" style="background:var(--tel-d);color:var(--tel)">📺</div><div><div class="ql-name">FIDS · ELQ-2</div><div class="ql-count">49 NEC screens</div></div></div>
-    <div class="ql" onclick="nav('ports')"><div class="ql-icon" style="background:var(--blu-d);color:var(--blu)">🔌</div><div><div class="ql-name">Port Map</div><div class="ql-count">10 switches</div></div></div>
-    <div class="ql" onclick="nav('summary')"><div class="ql-icon" style="background:var(--s3);color:var(--t1)">📊</div><div><div class="ql-name">Summary</div><div class="ql-count">Equipment counts</div></div></div>
-    <div class="ql" onclick="nav('elq1')"><div class="ql-icon" style="background:var(--s3);color:var(--t1)">🔧</div><div><div class="ql-name">All Sections</div><div class="ql-count">Full detail</div></div></div>
+    <div class="ql" role="button" tabindex="0" style="--q1:#FF8A3D;--q2:#FF3D81" onclick="nav('inventory')" onkeydown="if(event.key==='Enter')nav('inventory')"><div class="ql-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg></div><div class="ql-txt"><div class="ql-name">Inventory</div><div class="ql-count">355 assets</div></div><span class="ql-go">→</span></div>
+    <div class="ql" role="button" tabindex="0" style="--q1:#8B5CF6;--q2:#3B82F6" onclick="nav('fids1')" onkeydown="if(event.key==='Enter')nav('fids1')"><div class="ql-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div><div class="ql-txt"><div class="ql-name">FIDS · ELQ-1</div><div class="ql-count">44 LG screens</div></div><span class="ql-go">→</span></div>
+    <div class="ql" role="button" tabindex="0" style="--q1:#06B6D4;--q2:#22D3A0" onclick="nav('fids2')" onkeydown="if(event.key==='Enter')nav('fids2')"><div class="ql-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M7 9h4M7 12h7"/></svg></div><div class="ql-txt"><div class="ql-name">FIDS · ELQ-2</div><div class="ql-count">49 NEC screens</div></div><span class="ql-go">→</span></div>
+    <div class="ql" role="button" tabindex="0" style="--q1:#A3E635;--q2:#14B8A6" onclick="nav('ports')" onkeydown="if(event.key==='Enter')nav('ports')"><div class="ql-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="8" width="20" height="8" rx="2"/><path d="M6 12h.01M10 12h.01M14 12h.01M18 12h.01M6 8V5M12 8V5M18 8V5"/></svg></div><div class="ql-txt"><div class="ql-name">Port Map</div><div class="ql-count">10 switches</div></div><span class="ql-go">→</span></div>
+    <div class="ql" role="button" tabindex="0" style="--q1:#F472B6;--q2:#A855F7" onclick="nav('summary')" onkeydown="if(event.key==='Enter')nav('summary')"><div class="ql-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div><div class="ql-txt"><div class="ql-name">Summary</div><div class="ql-count">Equipment counts</div></div><span class="ql-go">→</span></div>
+    <div class="ql" role="button" tabindex="0" style="--q1:#FBBF24;--q2:#F97316" onclick="nav('elq1')" onkeydown="if(event.key==='Enter')nav('elq1')"><div class="ql-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div><div class="ql-txt"><div class="ql-name">All Sections</div><div class="ql-count">Full detail</div></div><span class="ql-go">→</span></div>
   </div>
 </div>
 </div>
@@ -190,6 +194,7 @@
 <!-- ══════════════════════════ GROUP DETAIL ══════════════════════════ -->
 <div class="pg" id="pg-grp">
   <div class="bc" id="grp-bc"></div>
+  <div class="page-hero" id="hero-grp"></div>
   <div class="mstrip ms3" id="grp-metrics"></div>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
     <p class="sl" style="margin:0;flex:1"><span class="sl-d" id="grp-sl-dot"></span><span id="grp-sl-txt"></span></p>
@@ -201,7 +206,7 @@
   <div class="bar">
     <input type="text" id="grp-q" placeholder="Search node name, SN, model, type…" oninput="filterGrp()"/>
   </div>
-  <div class="dev-list" id="grp-devlist"></div>
+  <div class="nc-grid" id="grp-devlist"></div>
   <div class="tf" id="grp-rc"></div>
 </div>
 
@@ -216,6 +221,7 @@
     <div class="bar">
       <input type="text" id="sf1" placeholder="Search node, SN, location…" oninput="rFids('f1')"/>
       <select id="gf1" onchange="rFids('f1')"><option value="all">All groups</option></select>
+      <button type="button" class="btn btn-g" onclick="fidsAll('f1',true)">Expand all</button><button type="button" class="btn btn-b" onclick="fidsAll('f1',false)">Collapse all</button>
     </div>
     <div id="fids1-sec"></div>
     <div class="tf" id="rc-f1"></div>
@@ -233,6 +239,7 @@
     <div class="bar">
       <input type="text" id="sf2" placeholder="Search node, SN, location…" oninput="rFids('f2')"/>
       <select id="gf2" onchange="rFids('f2')"><option value="all">All groups</option></select>
+      <button type="button" class="btn btn-g" onclick="fidsAll('f2',true)">Expand all</button><button type="button" class="btn btn-b" onclick="fidsAll('f2',false)">Collapse all</button>
     </div>
     <div id="fids2-sec"></div>
     <div class="tf" id="rc-f2"></div>
@@ -257,20 +264,20 @@
 
   <!-- FIDS Switch Mapping -->
   <p class="sl" style="margin-top:8px;"><span class="sl-d" style="background:var(--pur)"></span>FIDS Switch Distribution — ELQ-1 &amp; ELQ-2</p>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+  <div class="pf-stack">
     <div>
       <div class="pm-section-hdr" style="--sec-c:var(--pur)">
         <span class="pm-sec-icon">◈</span>
         <div><div class="pm-sec-title">ELQ-1 FIDS</div><div class="pm-sec-sub">LG Digital Signage · admin &amp; field switches</div></div>
       </div>
-      <div id="fm-e1"></div>
+      <div id="fm-e1" class="pf-grid"></div>
     </div>
     <div>
       <div class="pm-section-hdr" style="--sec-c:var(--tel)">
         <span class="pm-sec-icon">◈</span>
         <div><div class="pm-sec-title">ELQ-2 FIDS</div><div class="pm-sec-sub">NEC · communication room distribution</div></div>
       </div>
-      <div id="fm-e2"></div>
+      <div id="fm-e2" class="pf-grid"></div>
     </div>
   </div>
 </div>
@@ -283,22 +290,21 @@
     <div class="mcard" style="--mc-c:var(--tel)"><div class="mv">137</div><div class="ml">ELQ-2 Assets</div><div class="ms">9 groups</div></div>
     <div class="mcard" style="--mc-c:var(--amb)"><div class="mv">41</div><div class="ml">Spare Assets</div><div class="ms">BRS Arrival</div></div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
-    <div class="card"><div class="card-hdr"><p class="card-title"><span class="cdot" style="background:var(--blu)"></span>ELQ-1</p></div><div id="inv-b1"></div></div>
-    <div class="card"><div class="card-hdr"><p class="card-title"><span class="cdot" style="background:var(--tel)"></span>ELQ-2</p></div><div id="inv-b2"></div></div>
+  <div class="inv-head">
+    <p class="sl" style="margin:0;flex:1"><span class="sl-d" style="background:var(--blu)"></span>Choose a terminal to browse its categories</p>
+    <div class="bts"><button class="btn btn-g" onclick="xlsxInv()">⬇ Excel</button><button class="btn btn-b" onclick="csvInv()">⬇ CSV</button></div>
   </div>
-  <div class="card">
-    <div class="card-hdr"><p class="card-title">Full inventory list</p><div class="bts"><button class="btn btn-g" onclick="xlsxInv()">⬇ Excel</button><button class="btn btn-b" onclick="csvInv()">⬇ CSV</button></div></div>
-    <div class="bar">
-      <input type="text" id="sinv" placeholder="Search…" oninput="rInv()"/>
-      <select id="ginv" onchange="rInv()"><option value="all">All</option><option value="ELQ-1">ELQ-1</option><option value="ELQ-2">ELQ-2</option><option value="Spare">Spare</option></select>
-    </div>
-    <div class="tw" style="max-height:380px;">
-      <table><thead><tr><th>TERMINAL</th><th>CATEGORY</th><th>LOCATION</th><th style="text-align:right">ASSETS</th></tr></thead>
-      <tbody id="tb-inv"></tbody></table>
-    </div>
-    <div class="tf" id="rc-inv"></div>
-  </div>
+  <div class="inv-big-row" id="inv-cards"></div>
+  <div id="inv-spare"></div>
+</div>
+
+<!-- ══════════════════════════ INVENTORY · TERMINAL ══════════════════════════ -->
+<div class="pg" id="pg-invterm">
+  <div class="bc" id="invt-bc"></div>
+  <div class="page-hero" id="hero-invterm"></div>
+  <div class="bar"><input type="text" id="invt-q" placeholder="Search category or location…" oninput="renderInvTerm()"/></div>
+  <div class="cat-grid" id="invt-grid"></div>
+  <div class="tf" id="invt-rc"></div>
 </div>
 
 <!-- ══════════════════════════ CABINETS ══════════════════════════ -->
@@ -357,6 +363,7 @@
     </table>
   </div>
 </div>
+</div>
 
 <!-- ══════════════════════════ SUMMARY ══════════════════════════ -->
 <div class="pg" id="pg-summary">
@@ -388,33 +395,9 @@
 
 
 
-<!-- MODAL OVERLAY -->
-<div id="modal-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(4,8,16,.82);padding:20px;box-sizing:border-box;overflow-y:auto;align-items:flex-start;justify-content:center;" onclick="if(event.target===this)closeModal()">
-  <div id="modal-box" style="background:#0A1120;border:1px solid #254570;border-radius:14px;max-width:680px;margin:40px auto;overflow:hidden;font-family:Inter,system-ui,sans-serif;">
-    <div id="modal-head" style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:20px 24px;border-bottom:1px solid #1A3050;">
-      <div>
-        <div id="modal-title" style="font-size:15px;font-weight:700;color:#EAF2FF;margin-bottom:4px;">—</div>
-        <div id="modal-sub"   style="font-size:11px;color:#5A7A9A;">—</div>
-      </div>
-      <button onclick="closeModal()" style="font-size:16px;color:#5A7A9A;background:#162540;border:1px solid #1A3050;border-radius:7px;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
-    </div>
-    <div style="padding:20px 24px;">
-      <div id="modal-info" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px;"></div>
-      <div id="modal-assets-lbl" style="font-size:10px;font-weight:600;font-family:'JetBrains Mono',monospace;color:#9BB4D0;letter-spacing:.07em;margin-bottom:10px;"></div>
-      <div style="overflow-x:auto;border:1px solid #1A3050;border-radius:8px;">
-        <table id="modal-table" style="width:100%;border-collapse:collapse;font-size:12px;">
-          <thead><tr id="modal-thead" style="background:#162540;">
-            <th style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#9BB4D0;letter-spacing:.07em;text-align:left;padding:7px 11px;border-bottom:1px solid #1A3050;">#</th>
-            <th style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#9BB4D0;letter-spacing:.07em;text-align:left;padding:7px 11px;border-bottom:1px solid #1A3050;">TYPE</th>
-            <th style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#9BB4D0;letter-spacing:.07em;text-align:left;padding:7px 11px;border-bottom:1px solid #1A3050;">MODEL</th>
-            <th style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#9BB4D0;letter-spacing:.07em;text-align:left;padding:7px 11px;border-bottom:1px solid #1A3050;">SERIAL</th>
-            <th style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#9BB4D0;letter-spacing:.07em;text-align:left;padding:7px 11px;border-bottom:1px solid #1A3050;">ASSET TAG</th>
-          </tr></thead>
-          <tbody id="modal-tbody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
+<!-- NODE DETAIL MODAL -->
+<div class="nd-overlay" id="nd-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="nd-card" id="nd-card" role="dialog" aria-modal="true" aria-labelledby="nd-title"></div>
 </div>
 </body>
 </html>
