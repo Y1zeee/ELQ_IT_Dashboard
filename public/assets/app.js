@@ -777,11 +777,14 @@ document.getElementById('clk').textContent=new Date().toLocaleTimeString();
 // ─────────────────────────────────────────
 //  BUILD GROUP GRID
 // ─────────────────────────────────────────
+// Real asset count (some nodes have fewer records than assetPer suggests)
+const grpAssets = g => g.nodes.reduce((a,n)=>a+g.getA(n).length,0);
+
 function buildGrpGrid(elId,groups,term){
   const el=document.getElementById(elId);
   el.innerHTML='';
   groups.forEach(g=>{
-    const totalAssets=g.nodes.length*g.assetPer;
+    const totalAssets=grpAssets(g);
     const d=document.createElement('div');
     d.className='grp';
     d.innerHTML=`
@@ -818,9 +821,9 @@ function openGrp(g,term){
     <span class="bc-sep">/</span>
     <span class="bc-cur" style="color:${g.color}">${g.name}</span>`;
   setHero('hero-grp',{kicker:`${term} · ${g.desc.toUpperCase()}`,title:g.name,core:g.name,
-    text:`${g.desc} — ${g.loc}.`,meta:[[g.nodes.length,'nodes'],[g.nodes.length*g.assetPer,'assets']]});
+    text:`${g.desc} — ${g.loc}.`,meta:[[g.nodes.length,'nodes'],[grpAssets(g),'assets']]});
   // Metrics
-  const totalA=g.nodes.length*g.assetPer;
+  const totalA=grpAssets(g);
   document.getElementById('grp-metrics').innerHTML=`
     <div class="mcard" style="--mc-c:${g.color}"><div class="mv">${g.nodes.length}</div><div class="ml">Nodes</div></div>
     <div class="mcard" style="--mc-c:var(--amb)"><div class="mv">${totalA}</div><div class="ml">Assets</div></div>
@@ -1239,23 +1242,144 @@ rSum('sum-cute',SUM.cute);rSum('sum-pfm',SUM.pfm);rSum('sum-fidsams',SUM.fidsams
 // ─────────────────────────────────────────
 //  EXPORT HELPERS
 // ─────────────────────────────────────────
-function allGrpRows(g){const r=[];g.nodes.forEach(n=>g.getA(n).forEach(a=>r.push(a)));return r;}
-function expGrpXlsx(g){if(typeof XLSX==='undefined'){alert('Loading…');return;}const h=['NODE','IP','ASSET TAG','TYPE','SERIAL','MODEL'];doXlsx(h,allGrpRows(g).map(a=>[a.node,a.ip||'—',a.xid||'—',a.type,a.sn,a.model]),`ELQ_${g.name}`);}
-function expGrpCsv(g){const h=['NODE','IP','ASSET TAG','TYPE','SERIAL','MODEL'];doCsv(h,allGrpRows(g).map(a=>[a.node,a.ip||'—',a.xid||'—',a.type,a.sn,a.model]),`ELQ_${g.name}`);}
-function xlsxF(s){if(typeof XLSX==='undefined'){alert('Loading…');return;}const d=s==='f1'?FIDS1:FIDS2;doXlsx(['ASSET TAG','NODE','IP','GROUP','SERIAL','MODEL','LOCATION'],d.map(r=>[r.xid||'—',r.node,r.ip,r.group,r.sn,r.model,r.loc]),'ELQ_FIDS_'+s.toUpperCase());}
-function csvF(s){const d=s==='f1'?FIDS1:FIDS2;doCsv(['ASSET TAG','NODE','IP','GROUP','SERIAL','MODEL','LOCATION'],d.map(r=>[r.xid||'—',r.node,r.ip,r.group,r.sn,r.model,r.loc]),'ELQ_FIDS_'+s.toUpperCase());}
-function xlsxInv(){if(typeof XLSX==='undefined'){alert('Loading…');return;}const all=[...INV_E1.map(d=>['ELQ-1',d.cat,d.loc,d.assets]),...INV_E2.map(d=>['ELQ-2',d.cat,d.loc,d.assets]),...INV_SPARE.map(d=>['Spare',d.cat,d.loc,d.assets])];doXlsx(['TERMINAL','CATEGORY','LOCATION','ASSETS'],all,'ELQ_Inventory');}
-function csvInv(){const all=[...INV_E1.map(d=>['ELQ-1',d.cat,d.loc,d.assets]),...INV_E2.map(d=>['ELQ-2',d.cat,d.loc,d.assets]),...INV_SPARE.map(d=>['Spare',d.cat,d.loc,d.assets])];doCsv(['TERMINAL','CATEGORY','LOCATION','ASSETS'],all,'ELQ_Inventory');}
-function xlsxSum(s){if(typeof XLSX==='undefined'){alert('Loading…');return;}const d=SUM[s];doXlsx(['#','TYPE','ONLINE','SPARE','TOTAL'],d.map((r,i)=>[i+1,r.type,r.online,r.spare,r.online+r.spare]),'ELQ_Summary_'+s.toUpperCase());}
-function csvSum(s){const d=SUM[s];doCsv(['#','TYPE','ONLINE','SPARE','TOTAL'],d.map((r,i)=>[i+1,r.type,r.online,r.spare,r.online+r.spare]),'ELQ_Summary_'+s.toUpperCase());}
-function cabinetRows(){return [...document.querySelectorAll('#cabinet-table tbody tr')].map(row=>[...row.cells].map(cell=>cell.textContent.trim()));}
-function xlsxCabinets(){if(typeof XLSX==='undefined'){alert('Loading…');return;}doXlsx(['ASSET TAG','NODE','SERIAL','EQUIPMENT TYPE','MODEL','ROOM'],cabinetRows(),'ELQ_Cabinets');}
-function csvCabinets(){doCsv(['ASSET TAG','NODE','SERIAL','EQUIPMENT TYPE','MODEL','ROOM'],cabinetRows(),'ELQ_Cabinets');}
-function doCsv(h,rows,name){const BOM='\uFEFF';const csv=BOM+[h,...rows].map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(';')).join('\r\n');dl(name+'_'+today()+'.csv','text/csv;charset=utf-8',csv);}
-function doXlsx(h,rows,name){const ws=XLSX.utils.aoa_to_sheet([h,...rows]);ws['!cols']=h.map(()=>({wch:22}));const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Data');XLSX.writeFile(wb,name+'_'+today()+'.xlsx');}
+// Every export goes through one spec: {file, title, sheet, cols:[{h,num,code,sita}], rows, band, totals}
+// - band: column index whose value change starts a new zebra band (keeps a node's assets together)
+// - totals: rows appended after a blank row in Excel only (CSV stays raw data)
+const blank = v => (v == null || v === '—') ? '' : v;
+const SHEET = {
+  navy:'FF0B1B2D', head:'FF1F4E79', band:'FFEAF2FB', line:'FFB4C6DC', sub:'FF5A7A9A',
+  sita:'FFC55A11', total:'FFFFF2CC', white:'FFFFFFFF'
+};
+
+function grpSpec(g, term){
+  const hasLoc = g.nodes.some(n => g.getA(n).some(a => a.loc));
+  const rows = [];
+  g.nodes.forEach(n => g.getA(n).forEach(a => rows.push(
+    [n, blank(a.ip), blank(a.type), blank(a.model), blank(a.sn), blank(a.xid)].concat(hasLoc ? [blank(a.loc)] : [])
+  )));
+  return {file:`ELQ_${term}_${g.name}`, sheet:g.name, title:`${term} · ${g.name} — ${g.desc} (${g.loc})`, band:0, rows,
+    cols:[{h:'NODE',code:1},{h:'IP ADDRESS',code:1},{h:'TYPE'},{h:'MODEL'},{h:'SERIAL NUMBER',code:1},{h:'SITA TAG',code:1,sita:1}]
+      .concat(hasLoc ? [{h:'LOCATION'}] : [])};
+}
+function fidsSpec(s){
+  const d = (s==='f1' ? FIDS1 : FIDS2).slice().sort((a,b) => a.group.localeCompare(b.group) || a.node.localeCompare(b.node));
+  const term = s==='f1' ? 'ELQ-1' : 'ELQ-2';
+  return {file:`ELQ_FIDS_${term}`, sheet:`FIDS ${term}`, title:`FIDS · ${term} — ${d.length} screens (${s==='f1'?'LG Digital Signage':'NEC'})`, band:0,
+    cols:[{h:'GROUP',code:1},{h:'NODE',code:1},{h:'IP ADDRESS',code:1},{h:'LOCATION'},{h:'SERIAL NUMBER',code:1},{h:'SITA TAG',code:1,sita:1},{h:'MODEL'},{h:'SWITCH',code:1},{h:'PORT',num:1}],
+    rows:d.map(r => { const sw = NODE_SW[r.node] || {}; return [r.group, r.node, blank(r.ip), blank(r.loc), blank(r.sn), blank(r.xid), r.model, blank(sw.sw), sw.port == null ? '' : sw.port]; })};
+}
+function invSpec(){
+  const rows = [], totals = [];
+  Object.entries(INV_TERMS).forEach(([term,t]) => {
+    [...t.data].sort((a,b) => b.assets - a.assets).forEach(d => {
+      const g = invGroup(term, d.cat);
+      rows.push([term, d.cat, g ? g.desc : (CORE_CAT_DESC[d.cat] || ''), d.loc, g ? g.nodes.length : '', d.assets]);
+    });
+    totals.push([`${term} total`, '', '', '', '', invSum(t.data)]);
+  });
+  INV_SPARE.forEach(d => rows.push(['Spare', d.cat, 'Spare stock', d.loc, '', d.assets]));
+  totals.push(['Grand total', '', '', '', '', invSum(INV_E1) + invSum(INV_E2) + invSum(INV_SPARE)]);
+  return {file:'ELQ_Inventory', sheet:'Inventory', title:'ELQ Airport — Inventory by terminal and category', band:0, rows, totals,
+    cols:[{h:'TERMINAL'},{h:'CATEGORY',code:1},{h:'DESCRIPTION'},{h:'LOCATION'},{h:'NODES',num:1},{h:'ASSETS',num:1}]};
+}
+const SUM_TITLES = {cute:'CUTE equipment', pfm:'PFM', fidsams:'FIDS / AMS', egate:'E-Gates'};
+function sumSpec(s){
+  const d = SUM[s];
+  const on = d.reduce((a,r) => a + r.online, 0), sp = d.reduce((a,r) => a + r.spare, 0);
+  return {file:`ELQ_Summary_${s.toUpperCase()}`, sheet:SUM_TITLES[s], title:`Equipment summary — ${SUM_TITLES[s]}`,
+    cols:[{h:'#',num:1},{h:'TYPE'},{h:'ONLINE',num:1},{h:'SPARE',num:1},{h:'TOTAL',num:1}],
+    rows:d.map((r,i) => [i+1, r.type, r.online, r.spare, r.online + r.spare]), totals:[['', 'Total', on, sp, on + sp]]};
+}
+function cabSpec(){
+  const rows = [...document.querySelectorAll('#cabinet-table tbody tr')]
+    .map(row => [...row.cells].map(c => blank(c.textContent.trim())))
+    .map(([tag,node,sn,type,model,room]) => [room, type, node, model, sn, tag]);
+  return {file:'ELQ_Cabinets', sheet:'Cabinets', title:'ELQ-1 Core Room — Cabinet equipment', band:1, rows,
+    cols:[{h:'ROOM'},{h:'EQUIPMENT TYPE'},{h:'NODE',code:1},{h:'MODEL'},{h:'SERIAL NUMBER',code:1},{h:'SITA TAG',code:1,sita:1}]};
+}
+
+function doCsv(spec){
+  const q = c => '"' + String(c).replace(/"/g,'""') + '"';
+  const csv = '﻿' + [spec.cols.map(c => c.h), ...spec.rows].map(r => r.map(q).join(',')).join('\r\n');
+  dl(spec.file + '_' + today() + '.csv', 'text/csv;charset=utf-8', csv);
+}
+
+var _excelJs = null;
+function loadExcel(){
+  if (window.ExcelJS) return Promise.resolve();
+  if (!_excelJs) _excelJs = new Promise((ok, fail) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
+    s.onload = ok; s.onerror = () => { _excelJs = null; fail(); };
+    document.head.appendChild(s);
+  });
+  return _excelJs;
+}
+
+async function doXlsx(spec){
+  try { await loadExcel(); } catch (e) { alert('Could not load the Excel library. Check your connection and try again.'); return; }
+  const n = spec.cols.length, fill = argb => ({type:'pattern', pattern:'solid', fgColor:{argb}});
+  const border = {top:{style:'thin',color:{argb:SHEET.line}}, bottom:{style:'thin',color:{argb:SHEET.line}},
+                  left:{style:'thin',color:{argb:SHEET.line}}, right:{style:'thin',color:{argb:SHEET.line}}};
+  const wb = new ExcelJS.Workbook(); wb.creator = 'ELQ Airport IT';
+  const ws = wb.addWorksheet(spec.sheet.replace(/[\\\/?*\[\]:]/g,' ').slice(0,31), {views:[{state:'frozen', ySplit:3}]});
+
+  ws.mergeCells(1,1,1,n);
+  Object.assign(ws.getCell(1,1), {value:spec.title, font:{bold:true, size:14, color:{argb:SHEET.white}}, fill:fill(SHEET.navy), alignment:{vertical:'middle', indent:1}});
+  ws.getRow(1).height = 30;
+  ws.mergeCells(2,1,2,n);
+  Object.assign(ws.getCell(2,1), {value:`${spec.rows.length} rows · exported ${new Date().toLocaleString()}`, font:{italic:true, size:9, color:{argb:SHEET.sub}}, alignment:{indent:1}});
+
+  const hr = ws.getRow(3); hr.height = 22;
+  spec.cols.forEach((c,i) => Object.assign(hr.getCell(i+1), {value:c.h, font:{bold:true, color:{argb:SHEET.white}}, fill:fill(SHEET.head), border,
+    alignment:{vertical:'middle', horizontal:c.num ? 'right' : 'left'}}));
+
+  let shade = false, prev;
+  spec.rows.forEach((r,ri) => {
+    if (spec.band != null) { if (ri && r[spec.band] !== prev) shade = !shade; prev = r[spec.band]; }
+    else shade = ri % 2 === 1;
+    const row = ws.addRow(r);
+    spec.cols.forEach((c,i) => {
+      const cell = row.getCell(i+1);
+      cell.border = border;
+      if (shade) cell.fill = fill(SHEET.band);
+      if (c.code) cell.font = {name:'Consolas', size:10};
+      if (c.sita) cell.font = {name:'Consolas', size:10, bold:true, color:{argb:SHEET.sita}};
+      cell.alignment = {vertical:'middle', horizontal:c.num ? 'right' : 'left'};
+    });
+  });
+  ws.autoFilter = {from:{row:3, column:1}, to:{row:3, column:n}};
+
+  if (spec.totals) {
+    ws.addRow([]);
+    spec.totals.forEach(t => {
+      const row = ws.addRow(t);
+      spec.cols.forEach((c,i) => Object.assign(row.getCell(i+1), {font:{bold:true}, fill:fill(SHEET.total), border,
+        alignment:{horizontal:c.num ? 'right' : 'left'}}));
+    });
+  }
+
+  spec.cols.forEach((c,i) => {
+    const len = Math.max(c.h.length, ...spec.rows.map(r => String(r[i] == null ? '' : r[i]).length));
+    ws.getColumn(i+1).width = Math.min(48, Math.max(8, len + 3));
+  });
+
+  const buf = await wb.xlsx.writeBuffer();
+  dl(spec.file + '_' + today() + '.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buf);
+}
+
+function expGrpXlsx(g){ doXlsx(grpSpec(g, curTerm)); }
+function expGrpCsv(g){ doCsv(grpSpec(g, curTerm)); }
+function xlsxF(s){ doXlsx(fidsSpec(s)); }
+function csvF(s){ doCsv(fidsSpec(s)); }
+function xlsxInv(){ doXlsx(invSpec()); }
+function csvInv(){ doCsv(invSpec()); }
+function xlsxSum(s){ doXlsx(sumSpec(s)); }
+function csvSum(s){ doCsv(sumSpec(s)); }
+function xlsxCabinets(){ doXlsx(cabSpec()); }
+function csvCabinets(){ doCsv(cabSpec()); }
 function dl(n,t,c){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:t}));a.download=n;a.click();}
 function today(){return new Date().toISOString().slice(0,10);}
-(function(){const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';document.head.appendChild(s);})();
 
 
 
