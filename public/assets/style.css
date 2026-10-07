@@ -32,7 +32,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#0B1211;color:#DDE8DE;f
   --bg0:#07111F; --bg1:#0B1B2D; --bg2:#102944;
   --s1:#132F4A; --s2:#183A5A; --s3:#214B6D;
   --b1:#255477; --b2:#34729B; --b3:#4B91BB;
-  --t0:#F1F8FF; --t1:#B7D0E2; --t2:#7191AA; --t3:#4A6B84; --t4:#1A324A;
+  --t0:#F1F8FF; --t1:#B7D0E2; --t2:#A9C3D8; --t3:#86A6BF; --t4:#1A324A;
   --blu:#59C7FF; --blu-d:rgba(89,199,255,.14);
   --tel:#2CE0D0; --tel-d:rgba(44,224,208,.11);
   --grn:#43D99B; --grn-d:rgba(67,217,155,.1);
@@ -1495,3 +1495,8 @@ tbody tr:hover{background:rgba(89,199,255,.1);}
   .fsec-desc{display:none;}
   .fsec-name{flex:1;}
 }
+
+/* ── Readability: brighter labels & secondary text ── */
+.sl{color:var(--t1);font-size:10.5px;}
+.nd-fl,.nd-asset-kv i,.nd-sec{color:var(--blu);}
+.nd-asset-model{color:var(--tel);}
