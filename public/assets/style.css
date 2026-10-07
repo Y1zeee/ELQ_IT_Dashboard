@@ -1500,3 +1500,10 @@ tbody tr:hover{background:rgba(89,199,255,.1);}
 .sl{color:var(--t1);font-size:10.5px;}
 .nd-fl,.nd-asset-kv i,.nd-sec{color:var(--blu);}
 .nd-asset-model{color:var(--tel);}
+
+/* ── SITA tag: orange everywhere ── */
+:root{--sita:#F28C28;}
+.nd-fact.sita .nd-fl,.nd-fact.sita .nd-fv,
+.nd-asset-kv button.sita i,.nd-asset-kv button.sita b,
+.td-xid{color:var(--sita);}
+.nd-fact.sita,.nd-asset-kv button.sita{border-color:color-mix(in srgb,var(--sita) 40%,var(--b1));background:color-mix(in srgb,var(--sita) 8%,var(--bg2));}

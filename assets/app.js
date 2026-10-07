@@ -548,7 +548,7 @@ const NODE_SW = {};
 
 function ndFact(label, val, mono){
   var v = dashv(val);
-  return '<button type="button" class="nd-fact"' + (v==='—' ? ' disabled' : '') + ' onclick="copyFact(this)" title="Click to copy">' +
+  return '<button type="button" class="nd-fact' + (label==='SITA tag' ? ' sita' : '') + '"' + (v==='—' ? ' disabled' : '') + ' onclick="copyFact(this)" title="Click to copy">' +
     '<span class="nd-fl">' + label + '</span>' +
     '<span class="nd-fv' + (mono ? ' mono' : '') + '">' + esc(v) + '</span></button>';
 }
@@ -579,7 +579,7 @@ function openNode(o){
         return '<div class="nd-asset">' +
           '<div class="nd-asset-top"><span class="nd-asset-type">' + esc(a.type||'—') + '</span><span class="nd-asset-model">' + esc(a.model||'—') + '</span></div>' +
           '<div class="nd-asset-kv"><button type="button" onclick="copyFact(this)" ' + (dashv(a.sn)==='—'?'disabled':'') + '><i>SERIAL</i><b>' + esc(dashv(a.sn)) + '</b></button>' +
-          '<button type="button" onclick="copyFact(this)" ' + (dashv(a.xid)==='—'?'disabled':'') + '><i>SITA TAG</i><b>' + esc(dashv(a.xid)) + '</b></button></div>' +
+          '<button type="button" class="sita" onclick="copyFact(this)" ' + (dashv(a.xid)==='—'?'disabled':'') + '><i>SITA TAG</i><b>' + esc(dashv(a.xid)) + '</b></button></div>' +
           '</div>';
       }).join('') + '</div>';
   }
