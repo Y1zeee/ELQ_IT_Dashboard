@@ -1453,7 +1453,25 @@ function xlsxSum(s){ doXlsx(sumSpec(s)); }
 function csvSum(s){ doCsv(sumSpec(s)); }
 function xlsxCabinets(){ doXlsx(cabSpec()); }
 function csvCabinets(){ doCsv(cabSpec()); }
-function dl(n,t,c){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:t}));a.download=n;a.click();}
+// Inside the claude.ai viewer the page is sandboxed, so files go through the
+// viewer's "downloads" capability; on the normal site a plain link download works.
+var _dlCap = null;
+async function dl(n,t,c){
+  const blob = new Blob([c],{type:t});
+  if (window.claude && typeof window.claude.use === 'function') {
+    _dlCap = _dlCap || window.claude.use('downloads').catch(() => null);
+    const d = await _dlCap;
+    if (d) {
+      try { await d.save({filename:n, data:blob}); }
+      catch (e) { if (!e || e.code !== 'declined') alert('Download not available here (' + ((e && e.code) || 'error') + ').'); }
+      return;
+    }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = n; a.rel = 'noopener';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
 function today(){return new Date().toISOString().slice(0,10);}
 
 

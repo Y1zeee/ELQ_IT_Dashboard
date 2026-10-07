@@ -70,7 +70,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#0B1211;color:#DDE8DE;f
   backdrop-filter: blur(18px) saturate(125%);
   -webkit-backdrop-filter: blur(18px) saturate(125%);
 }
-.topbar-in { max-width: 1440px; margin: 0 auto; }
+.topbar-in { max-width: none; margin: 0 auto; }
 
 /* ── Logo row ── */
 .nb-logo-row {
@@ -200,7 +200,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#0B1211;color:#DDE8DE;f
 
 
 /* ── PAGE ── */
-.pg{display:none;max-width:1440px;margin:0 auto;padding:24px 20px 60px;}
+.pg{display:none;max-width:none;margin:0 auto;padding:24px max(clamp(12px,2.5vw,40px),env(safe-area-inset-right)) calc(60px + env(safe-area-inset-bottom)) max(clamp(12px,2.5vw,40px),env(safe-area-inset-left));}
 .pg.on{display:block;}
 
 /* ── DASHBOARD HERO ── */
@@ -1520,3 +1520,17 @@ tbody tr:hover{background:rgba(89,199,255,.1);}
 .nc-chip.miss-sita{color:var(--sita);}
 @media(max-width:768px){.ql-grid{grid-template-columns:1fr 1fr;}}
 @media(max-width:520px){.ql-grid{grid-template-columns:1fr;}.miss-hdr .fsec-desc{display:none;}}
+
+/* ── Fluid layout: fill any screen, no sideways scroll ── */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+html,body{max-width:100%;overflow-x:clip;}
+img,svg,canvas{max-width:100%;}
+.nc,.cat-card,.pf-card,.pf-tile,.inv-big,.tcard,.ql,.mcard{min-width:0;}
+@media(max-width:520px){.nc-grid,#grp-devlist.nc-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+/* Last row always stretches, so no empty slot is left at any width */
+.ql-grid{display:flex;flex-wrap:wrap;}
+.ql-grid>.ql{flex:1 1 260px;}
+@media(max-width:768px){
+  .mstrip.ms5>:last-child:nth-child(odd),.mstrip.ms3>:last-child:nth-child(odd){grid-column:1/-1;}
+}
+@media(max-width:520px){.ql-grid>.ql{flex-basis:100%;}}
