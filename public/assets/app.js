@@ -1193,6 +1193,75 @@ function renderInvTerm(){
 }
 
 // ─────────────────────────────────────────
+//  MISSING DATA — assets without SITA tag / serial number
+// ─────────────────────────────────────────
+const isBlank = v => !v || v === '—';
+const ASSET_RECORDS = (() => {
+  const out = [];
+  [[E1_GROUPS,'ELQ-1'],[E2_GROUPS,'ELQ-2']].forEach(([gs,term]) => gs.forEach(g => g.nodes.forEach(n => {
+    const a = g.getA(n);
+    // A node listed with no asset record is missing both values
+    if (!a.length) out.push({term, g, node:n, type:'No asset record', model:'', sn:'', xid:'', ip:'', loc:g.loc});
+    a.forEach(x => out.push({term, g, node:n, type:x.type || '—', model:x.model || '', sn:isBlank(x.sn) ? '' : x.sn,
+      xid:isBlank(x.xid) ? '' : x.xid, ip:isBlank(x.ip) ? '' : x.ip, loc:x.loc || g.loc}));
+  })));
+  return out;
+})();
+const MISSING = {
+  xid: ASSET_RECORDS.filter(r => !r.xid),
+  sn:  ASSET_RECORDS.filter(r => !r.sn)
+};
+var missKind = 'xid';
+
+function setMissKind(k){
+  missKind = k;
+  document.querySelectorAll('#pg-missing .miss-tab').forEach(b => b.classList.toggle('on', b.dataset.k === k));
+  renderMissing();
+}
+function openMissNode(i){
+  const r = _missShown[i];
+  openNode({name:r.node, color:r.g.color, group:r.g.name, desc:r.g.desc, loc:r.g.loc, term:r.term,
+    ip:r.ip, assets:r.g.getA(r.node)});
+}
+var _missShown = [];
+function renderMissing(){
+  const q = (document.getElementById('miss-q').value || '').toLowerCase();
+  const tv = document.getElementById('miss-t').value;
+  const rows = MISSING[missKind].filter(r =>
+    (tv === 'all' || r.term === tv) &&
+    (!q || [r.node, r.type, r.model, r.sn, r.xid, r.g.name, r.loc].some(v => (v || '').toLowerCase().includes(q))));
+  _missShown = rows;
+  const groups = {};
+  rows.forEach((r,i) => { const k = r.term + ' · ' + r.g.name; (groups[k] = groups[k] || {g:r.g, items:[]}).items.push(i); });
+  const other = missKind === 'xid' ? 'sn' : 'xid';
+  document.getElementById('miss-list').innerHTML = Object.entries(groups).map(([k,{g,items}]) => `
+    <div class="miss-sec" style="--c:${g.color}">
+      <div class="miss-hdr"><span class="fsec-bar"></span><span class="fsec-name">${esc(k)}</span><span class="fsec-desc">${esc(g.desc)}</span><span class="fsec-count">${items.length}</span></div>
+      <div class="nc-grid">${items.map(i => { const r = rows[i]; return `
+        <button type="button" class="nc" style="--c:${g.color}" onclick="openMissNode(${i})">
+          <div class="nc-top"><span class="nc-name">${esc(r.type)}</span></div>
+          <div class="nc-ip">${esc(r.node)}</div>
+          <div class="miss-model">${esc(r.model || '—')}</div>
+          <div class="nc-chips">
+            <span class="nc-chip miss-flag">${missKind === 'xid' ? 'No SITA tag' : 'No serial'}</span>
+            ${r[other] ? `<span class="nc-chip ${other === 'xid' ? 'miss-sita' : ''}">${esc(r[other])}</span>` : `<span class="nc-chip miss-flag">${other === 'xid' ? 'No SITA tag' : 'No serial'}</span>`}
+          </div>
+        </button>`; }).join('')}</div>
+    </div>`).join('') || '<div class="empty-note">Nothing missing here.</div>';
+  document.getElementById('miss-rc').textContent = `${rows.length} assets · tap a card to see the full node`;
+}
+
+function missSpec(){
+  const label = missKind === 'xid' ? 'without SITA tag' : 'without serial number';
+  const rows = MISSING[missKind].map(r => [r.term, r.g.name, r.node, r.type, r.model, r.ip, r.loc, r.sn, r.xid]);
+  return {file:`ELQ_Assets_${missKind === 'xid' ? 'No_SITA_Tag' : 'No_Serial'}`, sheet:label, band:2, rows,
+    title:`ELQ Airport — Assets ${label} (${rows.length})`,
+    cols:[{h:'TERMINAL'},{h:'GROUP',code:1},{h:'NODE',code:1},{h:'TYPE'},{h:'MODEL'},{h:'IP ADDRESS',code:1},{h:'LOCATION'},{h:'SERIAL NUMBER',code:1},{h:'SITA TAG',code:1,sita:1}]};
+}
+function xlsxMissing(){ doXlsx(missSpec()); }
+function csvMissing(){ doCsv(missSpec()); }
+
+// ─────────────────────────────────────────
 //  HERO BANNERS (shown on every page)
 // ─────────────────────────────────────────
 function setHero(id, cfg){ const el=document.getElementById(id); if(el) el.innerHTML = heroHTML(cfg); }
@@ -1210,6 +1279,8 @@ const PAGE_HEROES = {
     text:'Which device is plugged into which switch port, per room and terminal.', meta:[[10,'switches'],[FIDS1.length+FIDS2.length,'FIDS nodes mapped']]},
   inventory:{kicker:'ASSET REGISTER', title:'Inventory', core:'INV',
     text:'Every tracked asset in both terminals, organised by category.', meta:[[355,'assets'],[2,'terminals'],[41,'spare']]},
+  missing:{kicker:'DATA QUALITY · ASSET REGISTER', title:'Missing<br><span>Tags</span>', core:'TAGS',
+    text:'Devices that still have no SITA tag or no serial number, grouped by terminal and system.', meta:[[MISSING.xid.length,'without SITA tag'],[MISSING.sn.length,'without serial']]},
   summary:{kicker:'EQUIPMENT COUNTS', title:'Summary', core:'SUM',
     text:'Online and spare equipment totals by system.', meta:[[4,'systems']]}
 };
@@ -1232,6 +1303,10 @@ function fillTermCats(){
 }
 fillTermCats();
 buildInvCards();
+renderMissing();
+document.getElementById('ql-miss-count').textContent = `${MISSING.xid.length} no tag · ${MISSING.sn.length} no serial`;
+document.getElementById('miss-n-xid').textContent = MISSING.xid.length;
+document.getElementById('miss-n-sn').textContent = MISSING.sn.length;
 
 // ─────────────────────────────────────────
 //  SUMMARY

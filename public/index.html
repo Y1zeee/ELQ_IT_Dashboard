@@ -59,6 +59,7 @@
   <button class="nt" onclick="nav('elq2');closeDrawer()"      data-page="elq2">ELQ-2 — Terminal 2</button>
   <div class="nb-drawer-label">Assets</div>
   <button class="nt" onclick="nav('inventory');closeDrawer()" data-page="inventory">Inventory</button>
+  <button class="nt" onclick="nav('missing');closeDrawer()"   data-page="missing">Missing Tags</button>
   <button class="nt" onclick="nav('fids1');closeDrawer()"     data-page="fids1">FIDS · ELQ-1 (LG)</button>
   <button class="nt" onclick="nav('fids2');closeDrawer()"     data-page="fids2">FIDS · ELQ-2 (NEC)</button>
   <div class="nb-drawer-label">Infrastructure</div>
@@ -140,6 +141,7 @@
   <!-- Quick links -->
   <p class="sl"><span class="sl-d" style="background:var(--t3)"></span>Quick access</p>
   <div class="ql-grid">
+    <div class="ql" role="button" tabindex="0" style="--q1:#F28C28;--q2:#E11D48" onclick="nav('missing')" onkeydown="if(event.key==='Enter')nav('missing')"><div class="ql-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01M14 9l-4 4M10 9l4 4"/></svg></div><div class="ql-txt"><div class="ql-name">Missing Tags</div><div class="ql-count" id="ql-miss-count">—</div></div><span class="ql-go">→</span></div>
     <div class="ql" role="button" tabindex="0" style="--q1:#FF8A3D;--q2:#FF3D81" onclick="nav('inventory')" onkeydown="if(event.key==='Enter')nav('inventory')"><div class="ql-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg></div><div class="ql-txt"><div class="ql-name">Inventory</div><div class="ql-count">355 assets</div></div><span class="ql-go">→</span></div>
     <div class="ql" role="button" tabindex="0" style="--q1:#8B5CF6;--q2:#3B82F6" onclick="nav('fids1')" onkeydown="if(event.key==='Enter')nav('fids1')"><div class="ql-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div><div class="ql-txt"><div class="ql-name">FIDS · ELQ-1</div><div class="ql-count">44 LG screens</div></div><span class="ql-go">→</span></div>
     <div class="ql" role="button" tabindex="0" style="--q1:#06B6D4;--q2:#22D3A0" onclick="nav('fids2')" onkeydown="if(event.key==='Enter')nav('fids2')"><div class="ql-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M7 9h4M7 12h7"/></svg></div><div class="ql-txt"><div class="ql-name">FIDS · ELQ-2</div><div class="ql-count">49 NEC screens</div></div><span class="ql-go">→</span></div>
@@ -298,6 +300,22 @@
   <div class="bar"><input type="text" id="invt-q" placeholder="Search category or location…" oninput="renderInvTerm()"/></div>
   <div class="cat-grid" id="invt-grid"></div>
   <div class="tf" id="invt-rc"></div>
+</div>
+
+<!-- ══════════════════════════ MISSING TAGS ══════════════════════════ -->
+<div class="pg" id="pg-missing">
+  <div class="bc"><span class="bc-a" onclick="nav('home')">Home</span><span class="bc-sep">/</span><span class="bc-cur">Missing Tags</span></div>
+  <div class="miss-tabs">
+    <button type="button" class="miss-tab on" data-k="xid" onclick="setMissKind('xid')">Without SITA tag <b id="miss-n-xid">0</b></button>
+    <button type="button" class="miss-tab" data-k="sn" onclick="setMissKind('sn')">Without serial number <b id="miss-n-sn">0</b></button>
+  </div>
+  <div class="bar">
+    <input type="text" id="miss-q" placeholder="Search node, type, model, group…" oninput="renderMissing()"/>
+    <select id="miss-t" onchange="renderMissing()"><option value="all">Both terminals</option><option value="ELQ-1">ELQ-1</option><option value="ELQ-2">ELQ-2</option></select>
+    <button type="button" class="btn btn-g" onclick="xlsxMissing()">⬇ Excel</button><button type="button" class="btn btn-b" onclick="csvMissing()">⬇ CSV</button>
+  </div>
+  <div id="miss-list"></div>
+  <div class="tf" id="miss-rc"></div>
 </div>
 
 <!-- ══════════════════════════ CABINETS ══════════════════════════ -->

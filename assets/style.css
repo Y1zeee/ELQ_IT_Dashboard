@@ -1504,3 +1504,19 @@ tbody tr:hover{background:rgba(89,199,255,.1);}
 /* ── SITA tag: orange values everywhere ── */
 :root{--sita:#F28C28;}
 .nd-fact.sita .nd-fv,.nd-asset-kv button.sita b,.td-xid{color:var(--sita);}
+
+/* ── Missing tags page ── */
+.ql-grid{grid-template-columns:repeat(4,1fr);}
+.miss-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.miss-tab{font:600 12px Inter,sans-serif;color:var(--t1);background:var(--s1);border:1px solid var(--b1);border-radius:10px;padding:9px 14px;cursor:pointer;transition:.14s;}
+.miss-tab b{font-family:var(--mono);margin-left:6px;padding:1px 8px;border-radius:20px;background:var(--bg2);color:var(--t0);}
+.miss-tab:hover{border-color:var(--b2);}
+.miss-tab.on{color:#fff;border-color:var(--sita);background:color-mix(in srgb,var(--sita) 18%,var(--s1));}
+.miss-tab.on b{background:var(--sita);color:#1a0d00;}
+.miss-sec{margin-bottom:16px;}
+.miss-hdr{display:flex;align-items:center;gap:10px;padding:4px 2px 10px;}
+.miss-model{font-size:10.5px;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.nc-chip.miss-flag{color:#FFB4B4;border-color:rgba(255,113,136,.45);background:var(--red-d);}
+.nc-chip.miss-sita{color:var(--sita);}
+@media(max-width:768px){.ql-grid{grid-template-columns:1fr 1fr;}}
+@media(max-width:520px){.ql-grid{grid-template-columns:1fr;}.miss-hdr .fsec-desc{display:none;}}
