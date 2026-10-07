@@ -618,7 +618,7 @@ document.addEventListener('keydown', function(e){
 
 // ─── PAGE HERO (reception banner shown on every page) ───
 function heroHTML(c){
-  return '<section class="dash-hero compact">' +
+  return '<section class="dash-hero">' +
     '<div class="dash-hero-copy">' +
       '<div class="dash-hero-kicker"><span class="dash-hero-pulse"></span> ' + c.kicker + '</div>' +
       '<h1>' + c.title + '</h1>' +
@@ -773,30 +773,6 @@ document.addEventListener('keydown',e=>{
 });
 setInterval(()=>{document.getElementById('clk').textContent=new Date().toLocaleTimeString();},1000);
 document.getElementById('clk').textContent=new Date().toLocaleTimeString();
-
-// ─────────────────────────────────────────
-//  ON-DUTY ROTATION
-// ─────────────────────────────────────────
-const DUTY_TEAM = ['Zaid','Rakan','Abdulaziz','Fahad'];
-const DUTY_SHIFTS = [
-  {start:6, end:14, label:'06:00 – 14:00'},
-  {start:14, end:22, label:'14:00 – 22:00'},
-  {start:22, end:30, label:'22:00 – 06:00'}
-];
-function updateDutyPanel(){
-  const now = new Date();
-  const hour = now.getHours() + now.getMinutes() / 60;
-  const shift = DUTY_SHIFTS.find(s => hour >= s.start || (s.start === 22 && hour < 6)) || DUTY_SHIFTS[0];
-  const dayIndex = Math.floor(new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 86400000);
-  const shiftIndex = DUTY_SHIFTS.indexOf(shift);
-  const person = DUTY_TEAM[(dayIndex + shiftIndex) % DUTY_TEAM.length];
-  const personEl = document.getElementById('duty-person');
-  const shiftEl = document.getElementById('duty-shift');
-  if (personEl) personEl.textContent = person;
-  if (shiftEl) shiftEl.textContent = shift.label + ' · ELQ IT';
-}
-updateDutyPanel();
-setInterval(updateDutyPanel, 60000);
 
 // ─────────────────────────────────────────
 //  BUILD GROUP GRID
