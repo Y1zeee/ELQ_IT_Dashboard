@@ -736,7 +736,7 @@ function nav(id){
   if(pg) pg.classList.add('on');
   // Tabs — use data-page attribute for reliable matching
   document.querySelectorAll('.nt[data-page]').forEach(b=>{
-    b.classList.toggle('on', b.dataset.page===(id==='invterm'?'inventory':id));
+    b.classList.toggle('on', b.dataset.page===(id==='invterm'?'inventory':id==='nodes'?(nvTerm==='ELQ-2'?'elq2':nvTerm==='ELQ-1'?'elq1':'home'):id));
   });
   window.scrollTo({top:0,behavior:'instant'});
 }
@@ -1262,15 +1262,117 @@ function xlsxMissing(){ doXlsx(missSpec()); }
 function csvMissing(){ doCsv(missSpec()); }
 
 // ─────────────────────────────────────────
+//  NODE VIEWS — clickable counters (nodes / FIDS / workstations / assets)
+// ─────────────────────────────────────────
+const TERM_GROUPS = {'ELQ-1':E1_GROUPS, 'ELQ-2':E2_GROUPS};
+const isFidsGrp = g => /-DDC$/.test(g.name);
+const NODE_KINDS = {
+  all:    {label:'All nodes',    test:() => true,          color:'var(--blu)'},
+  fids:   {label:'FIDS screens', test:isFidsGrp,           color:'var(--pur)'},
+  wks:    {label:'Workstations', test:g => !isFidsGrp(g),  color:'var(--amb)'},
+  assets: {label:'All assets',   test:() => true,          color:'var(--grn)'}
+};
+function termStats(term){
+  const gs = TERM_GROUPS[term], sum = f => gs.filter(f).reduce((a,g) => a + g.nodes.length, 0);
+  return {groups:gs.length, nodes:sum(() => true), fids:sum(isFidsGrp), wks:sum(g => !isFidsGrp(g)),
+          assets:gs.reduce((a,g) => a + grpAssets(g), 0)};
+}
+// Counter tile that opens the matching node view
+function statTile(term, kind, value, label, sub, color){
+  return `<div class="mcard mc-go" role="button" tabindex="0" style="--mc-c:${color}" onclick="openNodeView('${term}','${kind}')" onkeydown="if(event.key==='Enter')openNodeView('${term}','${kind}')">
+    <div class="mv">${value}</div><div class="ml">${label}</div><div class="ms">${sub}</div><span class="mc-arr">→</span></div>`;
+}
+function buildTermStrips(){
+  [['ELQ-1','ms-e1','var(--blu)'],['ELQ-2','ms-e2','var(--tel)']].forEach(([t,id,c]) => {
+    const s = termStats(t), el = document.getElementById(id); if (!el) return;
+    el.innerHTML = statTile(t,'all',s.nodes,'Total Nodes',`${s.groups} groups`,c) +
+      statTile(t,'fids',s.fids,'FIDS Screens','tap to view','var(--pur)') +
+      statTile(t,'wks',s.wks,'Workstations','tap to view','var(--amb)') +
+      statTile(t,'assets',s.assets,'Total Assets','in device groups','var(--grn)');
+  });
+  // Home: terminal cards
+  [['ELQ-1','1','var(--blu)',4],['ELQ-2','2','var(--tel)',3]].forEach(([t,n,c,cab]) => {
+    const s = termStats(t);
+    const sub = document.getElementById('tc-sub-'+n); if (sub) sub.textContent = `${s.groups} device groups · ${s.assets} assets`;
+    const st = document.getElementById('tc-stats-'+n); if (!st) return;
+    const tile = (v,l,col,go) => `<div class="tstat ts-go" role="button" tabindex="0" onclick="event.stopPropagation();${go}" onkeydown="if(event.key==='Enter'){event.stopPropagation();${go}}"><div class="tstat-v" style="color:${col}">${v}</div><div class="tstat-l">${l} →</div></div>`;
+    st.innerHTML = tile(s.nodes,'Nodes',c,`openNodeView('${t}','all')`) + tile(s.fids,'FIDS','var(--pur)',`openNodeView('${t}','fids')`) +
+      tile(s.wks,'WKS','var(--amb)',`openNodeView('${t}','wks')`) + tile(cab,'Cabinets','var(--grn)',"nav('cabinets')");
+  });
+  // Home: top counters
+  const e1 = termStats('ELQ-1'), e2 = termStats('ELQ-2'), hm = document.getElementById('ms-home');
+  if (hm) hm.innerHTML = statTile('ELQ-1','all',e1.nodes,'ELQ-1 Nodes',`${e1.groups} groups`,'var(--blu)') +
+    statTile('ELQ-2','all',e2.nodes,'ELQ-2 Nodes',`${e2.groups} groups`,'var(--tel)') +
+    statTile('both','fids',e1.fids + e2.fids,'FIDS Screens','LG + NEC','var(--pur)') +
+    `<div class="mcard mc-go" role="button" tabindex="0" style="--mc-c:var(--amb)" onclick="nav('inventory')" onkeydown="if(event.key==='Enter')nav('inventory')"><div class="mv">355</div><div class="ml">Total Assets</div><div class="ms">both terminals</div><span class="mc-arr">→</span></div>` +
+    `<div class="mcard mc-go" role="button" tabindex="0" style="--mc-c:var(--grn)" onclick="nav('ports')" onkeydown="if(event.key==='Enter')nav('ports')"><div class="mv">10</div><div class="ml">Switches</div><div class="ms">core + access</div><span class="mc-arr">→</span></div>`;
+}
+
+var nvTerm = 'ELQ-1', nvKind = 'all', _nvNodes = [];
+function openNodeView(term, kind){
+  nvTerm = term; nvKind = kind;
+  const k = NODE_KINDS[kind], terms = term === 'both' ? ['ELQ-1','ELQ-2'] : [term];
+  const tLabel = term === 'both' ? 'Both terminals' : term;
+  const back = term === 'both' ? '' : `<span class="bc-a" onclick="nav('${term === 'ELQ-1' ? 'elq1' : 'elq2'}')">${term}</span><span class="bc-sep">/</span>`;
+  document.getElementById('nv-bc').innerHTML = `<span class="bc-a" onclick="nav('home')">Home</span><span class="bc-sep">/</span>${back}<span class="bc-cur">${k.label}</span>`;
+  const gs = terms.flatMap(t => TERM_GROUPS[t].filter(k.test).map(g => [t,g]));
+  const nodes = gs.reduce((a,[,g]) => a + g.nodes.length, 0), assets = gs.reduce((a,[,g]) => a + grpAssets(g), 0);
+  setHero('hero-nodes', {kicker:`${tLabel.toUpperCase()} · ${k.label.toUpperCase()}`, title:k.label, core:term === 'both' ? 'ELQ' : term,
+    text:`${k.label} in ${tLabel === 'Both terminals' ? 'both terminals' : tLabel}, grouped by system. Tap a card for serial, SITA tag and location.`,
+    meta:[[nodes,'nodes'],[assets,'assets'],[gs.length,'groups']]});
+  document.getElementById('nv-q').value = '';
+  renderNodeView();
+  nav('nodes');
+}
+function renderNodeView(){
+  const k = NODE_KINDS[nvKind], terms = nvTerm === 'both' ? ['ELQ-1','ELQ-2'] : [nvTerm];
+  const q = (document.getElementById('nv-q').value || '').toLowerCase();
+  _nvNodes = [];
+  let shown = 0;
+  const html = terms.flatMap(t => TERM_GROUPS[t].filter(k.test).map(g => {
+    const cards = g.nodes.map(n => {
+      const a = g.getA(n), ip = a.length ? a[0].ip : '—';
+      if (q && ![n, ip, ...a.flatMap(x => [x.sn, x.xid, x.type, x.model, x.loc])].some(v => (v || '').toLowerCase().includes(q))) return '';
+      shown++;
+      const i = _nvNodes.push({name:n, color:g.color, group:g.name, desc:g.desc, loc:g.loc, term:t, ip, assets:a}) - 1;
+      const one = a.length === 1 ? a[0] : null;
+      return `<button type="button" class="nc" style="--c:${g.color}" onclick="openNode(_nvNodes[${i}])">
+        <div class="nc-top"><span class="nc-name">${esc(n)}</span><span class="nc-n">${a.length}</span></div>
+        <div class="nc-ip">${esc(ip || '—')}</div>
+        <div class="nc-chips">${one && one.loc ? `<span class="nc-chip loc">${esc(one.loc)}</span>` : typeChips(a)}</div></button>`;
+    }).join('');
+    if (!cards) return '';
+    return `<div class="miss-sec" style="--c:${g.color}">
+      <div class="miss-hdr"><span class="fsec-bar"></span><span class="fsec-name">${terms.length > 1 ? t + ' · ' : ''}${g.name}</span><span class="fsec-desc">${esc(g.desc)}</span><span class="fsec-count">${g.nodes.length}</span></div>
+      <div class="nc-grid">${cards}</div></div>`;
+  })).join('');
+  document.getElementById('nv-list').innerHTML = html || '<div class="empty-note">No nodes match your search.</div>';
+  document.getElementById('nv-rc').textContent = `${shown} nodes · tap a card for details`;
+}
+function nvExportSpec(){
+  const k = NODE_KINDS[nvKind], terms = nvTerm === 'both' ? ['ELQ-1','ELQ-2'] : [nvTerm], rows = [];
+  terms.forEach(t => TERM_GROUPS[t].filter(k.test).forEach(g => g.nodes.forEach(n => {
+    const a = g.getA(n);
+    if (!a.length) rows.push([t, g.name, n, '', '', '', '', '', '']);
+    a.forEach(x => rows.push([t, g.name, n, blank(x.ip), blank(x.type), blank(x.model), blank(x.sn), blank(x.xid), blank(x.loc)]));
+  })));
+  const tl = nvTerm === 'both' ? 'ELQ' : nvTerm;
+  return {file:`ELQ_${tl}_${k.label.replace(/ /g,'_')}`, sheet:k.label, title:`${tl} — ${k.label}`, band:2, rows,
+    cols:[{h:'TERMINAL'},{h:'GROUP',code:1},{h:'NODE',code:1},{h:'IP ADDRESS',code:1},{h:'TYPE'},{h:'MODEL'},{h:'SERIAL NUMBER',code:1},{h:'SITA TAG',code:1,sita:1},{h:'LOCATION'}]};
+}
+function xlsxNodes(){ doXlsx(nvExportSpec()); }
+function csvNodes(){ doCsv(nvExportSpec()); }
+
+// ─────────────────────────────────────────
 //  HERO BANNERS (shown on every page)
 // ─────────────────────────────────────────
 function setHero(id, cfg){ const el=document.getElementById(id); if(el) el.innerHTML = heroHTML(cfg); }
 const fidsGroups = d => new Set(d.map(x=>x.group)).size;
 const PAGE_HEROES = {
   elq1:{kicker:'TERMINAL 1 · LIVE NETWORK', title:'ELQ-1', core:'ELQ-1',
-    text:'Check-in, gates, FIDS and core room assets for Terminal 1.', meta:[[67,'nodes'],[177,'assets'],[FIDS1.length,'FIDS screens']]},
+    text:'Check-in, gates, FIDS and core room assets for Terminal 1.', meta:[[termStats('ELQ-1').nodes,'nodes'],[termStats('ELQ-1').assets,'assets'],[FIDS1.length,'FIDS screens']]},
   elq2:{kicker:'TERMINAL 2 · LIVE NETWORK', title:'ELQ-2', core:'ELQ-2',
-    text:'Check-in, gates, FIDS and public area assets for Terminal 2.', meta:[[70,'nodes'],[137,'assets'],[FIDS2.length,'FIDS screens']]},
+    text:'Check-in, gates, FIDS and public area assets for Terminal 2.', meta:[[termStats('ELQ-2').nodes,'nodes'],[termStats('ELQ-2').assets,'assets'],[FIDS2.length,'FIDS screens']]},
   fids1:{kicker:'FIDS · ELQ-1', title:'FIDS<br><span>Terminal 1</span>', core:'FIDS',
     text:'LG digital signage controllers across check-in, gates and arrivals.', meta:[[FIDS1.length,'screens'],[fidsGroups(FIDS1),'groups'],['LG','signage']]},
   fids2:{kicker:'FIDS · ELQ-2', title:'FIDS<br><span>Terminal 2</span>', core:'FIDS',
@@ -1303,6 +1405,7 @@ function fillTermCats(){
 }
 fillTermCats();
 buildInvCards();
+buildTermStrips();
 renderMissing();
 document.getElementById('ql-miss-count').textContent = `${MISSING.xid.length} no tag · ${MISSING.sn.length} no serial`;
 document.getElementById('miss-n-xid').textContent = MISSING.xid.length;

@@ -1534,3 +1534,12 @@ img,svg,canvas{max-width:100%;}
   .mstrip.ms5>:last-child:nth-child(odd),.mstrip.ms3>:last-child:nth-child(odd){grid-column:1/-1;}
 }
 @media(max-width:520px){.ql-grid>.ql{flex-basis:100%;}}
+
+/* ── Clickable counters ── */
+.mc-go,.ts-go{cursor:pointer;transition:transform .14s,border-color .14s,box-shadow .18s,background .14s;}
+.mc-go{padding-right:30px;}
+.mc-go:hover,.ts-go:hover{transform:translateY(-2px);border-color:var(--mc-c,var(--b2));box-shadow:0 8px 20px rgba(0,0,0,.25);}
+.ts-go:hover{background:var(--s2);}
+.mc-go:focus-visible,.ts-go:focus-visible{outline:2px solid var(--blu);outline-offset:2px;}
+.mc-arr{position:absolute;right:12px;top:12px;color:var(--mc-c,var(--t2));opacity:.55;transition:transform .14s,opacity .14s;}
+.mc-go:hover .mc-arr{opacity:1;transform:translateX(3px);}

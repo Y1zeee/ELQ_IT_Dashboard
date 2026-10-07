@@ -99,13 +99,7 @@
   </section>
 
   <!-- Hero metrics -->
-  <div class="mstrip ms5">
-    <div class="mcard" style="--mc-c:var(--blu)"><div class="mv">67</div><div class="ml">ELQ-1 Nodes</div><div class="ms">17 groups</div></div>
-    <div class="mcard" style="--mc-c:var(--tel)"><div class="mv">70</div><div class="ml">ELQ-2 Nodes</div><div class="ms">9 groups</div></div>
-    <div class="mcard" style="--mc-c:var(--pur)"><div class="mv">96</div><div class="ml">FIDS Screens</div><div class="ms">LG + NEC</div></div>
-    <div class="mcard" style="--mc-c:var(--amb)"><div class="mv">355</div><div class="ml">Total Assets</div><div class="ms">both terminals</div></div>
-    <div class="mcard" style="--mc-c:var(--grn)"><div class="mv">10</div><div class="ml">Switches</div><div class="ms">core + access</div></div>
-  </div>
+  <div class="mstrip ms5" id="ms-home"></div>
 
   <!-- Terminal cards -->
   <p class="sl"><span class="sl-d" style="background:var(--blu)"></span>Terminals</p>
@@ -113,26 +107,16 @@
     <div class="tcard t1" onclick="nav('elq1')">
       <div class="tcard-top"><span class="tbadge t1">ELQ-1</span><span class="tarr">→</span></div>
       <div class="tcard-title">Terminal 1</div>
-      <div class="tcard-sub">17 device groups · 177 total assets</div>
-      <div class="tcard-stats">
-        <div class="tstat"><div class="tstat-v" style="color:var(--blu)">67</div><div class="tstat-l">Nodes</div></div>
-        <div class="tstat"><div class="tstat-v" style="color:var(--pur)">45</div><div class="tstat-l">FIDS</div></div>
-        <div class="tstat"><div class="tstat-v" style="color:var(--amb)">22</div><div class="tstat-l">WKS</div></div>
-        <div class="tstat"><div class="tstat-v" style="color:var(--grn)">4</div><div class="tstat-l">Cabinets</div></div>
-      </div>
+      <div class="tcard-sub" id="tc-sub-1"></div>
+      <div class="tcard-stats" id="tc-stats-1"></div>
       <div class="tcard-cats-l">TOP CATEGORIES</div>
       <div class="tcard-cats" id="tc-cats-1"></div>
     </div>
     <div class="tcard t2" onclick="nav('elq2')">
       <div class="tcard-top"><span class="tbadge t2">ELQ-2</span><span class="tarr">→</span></div>
       <div class="tcard-title">Terminal 2</div>
-      <div class="tcard-sub">9 device groups · 137 total assets</div>
-      <div class="tcard-stats">
-        <div class="tstat"><div class="tstat-v" style="color:var(--tel)">70</div><div class="tstat-l">Nodes</div></div>
-        <div class="tstat"><div class="tstat-v" style="color:var(--pur)">49</div><div class="tstat-l">FIDS</div></div>
-        <div class="tstat"><div class="tstat-v" style="color:var(--amb)">21</div><div class="tstat-l">WKS</div></div>
-        <div class="tstat"><div class="tstat-v" style="color:var(--grn)">3</div><div class="tstat-l">Cabinets</div></div>
-      </div>
+      <div class="tcard-sub" id="tc-sub-2"></div>
+      <div class="tcard-stats" id="tc-stats-2"></div>
       <div class="tcard-cats-l">TOP CATEGORIES</div>
       <div class="tcard-cats" id="tc-cats-2"></div>
     </div>
@@ -159,12 +143,7 @@
     <span class="bc-sep">/</span>
     <span class="bc-cur">ELQ-1 · Terminal 1</span>
   </div>
-  <div class="mstrip ms4">
-    <div class="mcard" style="--mc-c:var(--blu)"><div class="mv">67</div><div class="ml">Total Nodes</div><div class="ms">17 groups</div></div>
-    <div class="mcard" style="--mc-c:var(--pur)"><div class="mv">45</div><div class="ml">FIDS Screens</div></div>
-    <div class="mcard" style="--mc-c:var(--amb)"><div class="mv">22</div><div class="ml">Workstations</div></div>
-    <div class="mcard" style="--mc-c:var(--grn)"><div class="mv">177</div><div class="ml">Total Assets</div></div>
-  </div>
+  <div class="mstrip ms4" id="ms-e1"></div>
   <p class="sl"><span class="sl-d" style="background:var(--blu)"></span>Device groups — tap to browse nodes &amp; assets</p>
   <div class="grp-grid" id="gg-e1"></div>
 </div>
@@ -176,12 +155,7 @@
     <span class="bc-sep">/</span>
     <span class="bc-cur">ELQ-2 · Terminal 2</span>
   </div>
-  <div class="mstrip ms4">
-    <div class="mcard" style="--mc-c:var(--tel)"><div class="mv">70</div><div class="ml">Total Nodes</div><div class="ms">9 groups</div></div>
-    <div class="mcard" style="--mc-c:var(--pur)"><div class="mv">49</div><div class="ml">FIDS Screens</div></div>
-    <div class="mcard" style="--mc-c:var(--amb)"><div class="mv">21</div><div class="ml">Workstations</div></div>
-    <div class="mcard" style="--mc-c:var(--grn)"><div class="mv">137</div><div class="ml">Total Assets</div></div>
-  </div>
+  <div class="mstrip ms4" id="ms-e2"></div>
   <p class="sl"><span class="sl-d" style="background:var(--tel)"></span>Device groups — tap to browse nodes &amp; assets</p>
   <div class="grp-grid" id="gg-e2"></div>
 </div>
@@ -316,6 +290,18 @@
   </div>
   <div id="miss-list"></div>
   <div class="tf" id="miss-rc"></div>
+</div>
+
+<!-- ══════════════════════════ NODE VIEW ══════════════════════════ -->
+<div class="pg" id="pg-nodes">
+  <div class="bc" id="nv-bc"></div>
+  <div class="page-hero" id="hero-nodes"></div>
+  <div class="bar">
+    <input type="text" id="nv-q" placeholder="Search node, IP, serial, SITA tag, type…" oninput="renderNodeView()"/>
+    <button type="button" class="btn btn-g" onclick="xlsxNodes()">⬇ Excel</button><button type="button" class="btn btn-b" onclick="csvNodes()">⬇ CSV</button>
+  </div>
+  <div id="nv-list"></div>
+  <div class="tf" id="nv-rc"></div>
 </div>
 
 <!-- ══════════════════════════ CABINETS ══════════════════════════ -->
