@@ -1020,71 +1020,86 @@ function classifyPort(dev) {
 }
 const typeLabel = { uplink:'UPLINK', infra:'INFRA', workst:'CUTE', fids:'FIDS', mgmt:'MGMT' };
 
-function buildPortMap() {
-  const container = document.getElementById('pmg');
-  container.innerHTML = '';
-
-  SW_LOCATIONS.forEach(loc => {
-    const locDiv = document.createElement('div');
-    locDiv.className = 'pm-location-group';
-    locDiv.innerHTML = `<div class="pm-location-label" style="--loc-c:${loc.color}">${loc.label}</div>`;
-
-    loc.switches.forEach(swName => {
-      const sw = SWITCHES.find(s => s.name === swName);
-      if (!sw) return;
-
-      const activePorts = sw.ports.filter(p => p.dev && p.dev !== '—');
-      const total = activePorts.length;
-
-      // Determine switch color by location
-      const swColor = loc.color;
-      const swColorDim = loc.color + '18';
-      const swColorBrd = loc.color + '30';
-
-      // Build port rows
-      const portRows = activePorts.map(p => {
-        const isEmpty = false;
-        const ptype = classifyPort(p.dev);
-        const typeTag = ptype ? `<span class="pm-type ${ptype}">${typeLabel[ptype]}</span>` : '';
-        return `<tr>
-          <td class="pm-pn">
-            <span class="pm-led ${isEmpty?'empty-led':'active'}"></span>${p.port}
-          </td>
-          <td>
-            <span class="pm-dn ${isEmpty?'empty':''}">${isEmpty ? 'empty' : p.dev}</span>${typeTag}
-          </td>
-          <td class="pm-ipc">${p.ip||''}</td>
-        </tr>`;
-      }).join('');
-
-      locDiv.innerHTML += `
-        <div class="pm-sw-wrap" style="--sw-c:${swColor};--sw-cd:${swColorDim};--sw-cb:${swColorBrd}">
-          <div class="pm-sw-hdr">
-            <div class="pm-sw-accent"></div>
-            <div class="pm-sw-info">
-              <div class="pm-sw-name">${sw.name}</div>
-              <div class="pm-sw-meta">
-                <span class="pm-sw-room">${sw.room}</span>
-                <div class="pm-sw-counts">
-                  <span class="pm-sw-count used">${activePorts.length} active</span>
-                  <span class="pm-sw-count total">${total} ports total</span>
-                </div>
-              </div>
+// One switch card with its port table. showAll also lists free ports (used on Cabinets).
+function swCardHTML(sw, color, showAll) {
+  const active = sw.ports.filter(p => p.dev && p.dev !== '—');
+  const rows = (showAll ? sw.ports : active).map(p => {
+    const used = p.dev && p.dev !== '—';
+    const ptype = used ? classifyPort(p.dev) : null;
+    const typeTag = ptype ? `<span class="pm-type ${ptype}">${typeLabel[ptype]}</span>` : '';
+    return `<tr${used ? '' : ' class="pm-free"'}>
+      <td class="pm-pn"><span class="pm-led ${used ? 'active' : 'empty-led'}"></span>${p.port}</td>
+      <td><span class="pm-dn ${used ? '' : 'empty'}">${used ? esc(p.dev) : 'Free'}</span>${typeTag}</td>
+      <td class="pm-ipc">${p.ip || ''}</td>
+    </tr>`;
+  }).join('');
+  return `
+    <div class="pm-sw-wrap" style="--sw-c:${color};--sw-cd:${color}18;--sw-cb:${color}30">
+      <div class="pm-sw-hdr">
+        <div class="pm-sw-accent"></div>
+        <div class="pm-sw-info">
+          <div class="pm-sw-name">${sw.name}</div>
+          <div class="pm-sw-meta">
+            <span class="pm-sw-room">${sw.room}</span>
+            <div class="pm-sw-counts">
+              <span class="pm-sw-count used">${active.length} active</span>
+              <span class="pm-sw-count total">${sw.ports.length} ports total</span>
             </div>
           </div>
-          <div style="overflow-x:auto;">
-            <table class="pm-port-table">
-              <thead><tr><th>PORT</th><th>CONNECTED DEVICE</th><th>IP ADDRESS</th></tr></thead>
-              <tbody>${portRows}</tbody>
-            </table>
-          </div>
-        </div>`;
-    });
-
-    container.appendChild(locDiv);
-  });
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="pm-port-table">
+          <thead><tr><th>PORT</th><th>CONNECTED DEVICE</th><th>IP ADDRESS</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
 }
+
+function buildPortMap() {
+  const container = document.getElementById('pmg');
+  container.innerHTML = SW_LOCATIONS.map(loc =>
+    `<div class="pm-location-group"><div class="pm-location-label" style="--loc-c:${loc.color}">${loc.label}</div>` +
+    loc.switches.map(n => SWITCHES.find(s => s.name === n)).filter(Boolean).map(sw => swCardHTML(sw, loc.color, false)).join('') +
+    `</div>`).join('');
+}
+
+// Cabinets page: one collapsible cabinet per room, with every switch port (free ports included)
+var CAB_OPEN = new Set();
+function toggleCab(k){ CAB_OPEN.has(k) ? CAB_OPEN.delete(k) : CAB_OPEN.add(k); buildCabinetRooms(); }
+function buildCabinetRooms() {
+  const el = document.getElementById('cab-rooms');
+  if (!el) return;
+  el.innerHTML = SW_LOCATIONS.map(loc => {
+    const sws = loc.switches.map(n => SWITCHES.find(s => s.name === n)).filter(Boolean);
+    const ports = sws.reduce((a, sw) => a + sw.ports.length, 0);
+    const used = sws.reduce((a, sw) => a + sw.ports.filter(p => p.dev && p.dev !== '—').length, 0);
+    const open = CAB_OPEN.has(loc.key);
+    return `<div class="fsec cab-room${open ? ' open' : ''}" style="--c:${loc.color}">
+      <button type="button" class="fsec-hdr" onclick="toggleCab('${loc.key}')" aria-expanded="${open}">
+        <span class="fsec-bar"></span>
+        <span class="fsec-name">${loc.label}</span>
+        <span class="fsec-desc">${sws.length} switch${sws.length > 1 ? 'es' : ''} · ${used} of ${ports} ports in use</span>
+        <span class="fsec-count">${sws.length}</span>
+        <span class="fsec-chev">▾</span>
+      </button>
+      ${open ? `<div class="fsec-body cab-body">${sws.map(sw => swCardHTML(sw, loc.color, true)).join('')}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+function cabRoomsSpec() {
+  const rows = [];
+  SW_LOCATIONS.forEach(loc => loc.switches.map(n => SWITCHES.find(s => s.name === n)).filter(Boolean).forEach(sw =>
+    sw.ports.forEach(p => { const used = p.dev && p.dev !== '—'; const t = used ? classifyPort(p.dev) : null;
+      rows.push([loc.label, sw.name, p.port, used ? p.dev : 'Free', t ? typeLabel[t] : '', p.ip || '']); })));
+  return {file:'ELQ_Cabinet_Ports', sheet:'Cabinet ports', title:'ELQ-1 Cabinets — switch port mapping by room', band:1, rows,
+    cols:[{h:'CABINET / ROOM'},{h:'SWITCH',code:1},{h:'PORT',code:1},{h:'CONNECTED DEVICE'},{h:'TYPE'},{h:'IP ADDRESS',code:1}]};
+}
+function xlsxCabRooms(){ doXlsx(cabRoomsSpec()); }
+function csvCabRooms(){ doCsv(cabRoomsSpec()); }
 buildPortMap();
+buildCabinetRooms();
 
 // FIDS MAP renderer — one card per switch, one tile per node (tap for details)
 var _fmNodes = [];
