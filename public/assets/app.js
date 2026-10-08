@@ -80,6 +80,9 @@ const E2GTU_ROWS = [
   {node:'ELQ2GTU004',ip:'57.1.174.199',type:'Computer',sn:'8CC3200SSF',model:'HP Elite Mini 600 G9'},{node:'ELQ2GTU004',ip:'57.1.174.199',type:'Monitor',sn:'CNK3020RL1',model:'HP Series 3 Pro 322pf'},{node:'ELQ2GTU004',ip:'57.1.174.199',type:'Boarding Pass Printer (ATB)',sn:'MEC38823110204',model:'CUSTOM TK180'},{node:'ELQ2GTU004',ip:'57.1.174.199',type:'Boarding Gate Reader (BGR)',sn:'1852251689',model:'ACCESS BGR 135'},{node:'ELQ2GTU004',ip:'57.1.174.199',type:'Document Printer (DCP)',sn:'X3YN002973',model:'EPSON FX-890II'},
   {node:'ELQ2GTU005',ip:'57.1.174.220',type:'Computer',sn:'8CC3200SSF',model:'HP Elite Mini 600 G9'},{node:'ELQ2GTU005',ip:'57.1.174.220',type:'Monitor',sn:'CNK3020RLL',model:'HP Series 3 Pro 322pf'},{node:'ELQ2GTU005',ip:'57.1.174.220',type:'Boarding Pass Printer (ATB)',sn:'MEC3008823110079',model:'CUSTOM TK180'},{node:'ELQ2GTU005',ip:'57.1.174.220',type:'Boarding Gate Reader (BGR)',sn:'1617220626',model:'ACCESS BGR 135'},
   {node:'ELQ2GTU006',ip:'57.1.174.209',type:'Computer',sn:'8CC3200SSN',model:'HP Elite Mini 600 G9'},{node:'ELQ2GTU006',ip:'57.1.174.209',type:'Monitor',sn:'CNK3020SWW',model:'HP Series 3 Pro 322pf'},{node:'ELQ2GTU006',ip:'57.1.174.209',type:'Boarding Pass Printer (ATB)',sn:'MEC3882311020',model:'CUSTOM TK180'},{node:'ELQ2GTU006',ip:'57.1.174.209',type:'Boarding Gate Reader (BGR)',sn:'8CC3200SSF',model:'DESKO BGR504 PRO'},{node:'ELQ2GTU006',ip:'57.1.174.209',type:'Document Printer (DCP)',sn:'X3TN003165',model:'EPSON FX-890II'},{node:'ELQ2GTU006',ip:'57.1.174.209',type:'LaserJet Printer',sn:'PHCBR5H1DW',model:'LaserJet Enterprise M507'},
+  // GTU007/008: node and IP known; asset details (serial, SITA tag, model) not recorded yet
+  {node:'ELQ2GTU007',ip:'57.1.174.221',type:'Workstation',sn:'',model:'',loc:'Gate 1 Workstation'},
+  {node:'ELQ2GTU008',ip:'57.1.174.222',type:'Workstation',sn:'',model:'',loc:'Gate 4 Workstation'},
 ];
 
 // ELQ-1 DDC grouped by type
@@ -360,7 +363,7 @@ const E1_GROUPS = [
   {
     key:'gtu', name:'GTU', color:'#1FD8C8',
     desc:'Gate Unit Workstations', loc:'Departure Gates',
-    nodes:['ELQ1GTU001','ELQ1GTU002','ELQ1GTU003','ELQ1GTU004'],
+    nodes:['ELQ1GTU001','ELQ1GTU002','ELQ1GTU003','ELQ1GTU004','ELQ1GTU005'],
     assetPer:8,
     getA: n => (E1GTU_ASSETS[n]||[]).map(a=>({...a, node:n, ip:E1GTU_IPS[n]||'—'}))
   },
@@ -472,7 +475,7 @@ const E2_GROUPS = [
   {
     key:'e2gtu', name:'GTU', color:'#4BA3FF',
     desc:'Gate Unit Workstations', loc:'Departure Gates',
-    nodes:['ELQ2GTU001','ELQ2GTU002','ELQ2GTU003','ELQ2GTU004','ELQ2GTU005','ELQ2GTU006'],
+    nodes:['ELQ2GTU001','ELQ2GTU002','ELQ2GTU003','ELQ2GTU004','ELQ2GTU005','ELQ2GTU006','ELQ2GTU007','ELQ2GTU008'],
     assetPer:5,
     getA: n => E2GTU_ROWS.filter(r=>r.node===n)
   },
