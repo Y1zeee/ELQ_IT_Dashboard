@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<title>Operations Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="assets/style.css"/>
+</head>
+<body>
+
+<!-- ═══ TOP BAR: brand mark + live clock + glass navigation (tabs are built from SECTIONS in app.js) ═══ -->
+<div class="topbar" id="topbar">
+<div class="topbar-in">
+  <div class="nb-logo-row">
+    <div class="nb-logo" role="link" tabindex="0" onclick="nav('home');closeDrawer()" onkeydown="if(event.key==='Enter'){nav('home');closeDrawer()}">
+      <div class="nb-mark" aria-hidden="true">
+        <svg viewBox="0 0 48 48">
+          <defs><linearGradient id="nbMarkBg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2E8BFF"/><stop offset="1" stop-color="#1FD8C8"/></linearGradient></defs>
+          <rect x="1" y="1" width="46" height="46" rx="13" fill="url(#nbMarkBg)"/>
+          <path class="nb-mark-path" d="M8 37 C 16 33, 26 26, 37 11" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.6" stroke-dasharray="2.5 3" stroke-linecap="round"/>
+          <path d="M7 41 H 41" stroke="rgba(255,255,255,.35)" stroke-width="1.6" stroke-dasharray="4 3" stroke-linecap="round"/>
+          <g transform="translate(24 21) rotate(45) translate(-12 -12)"><path fill="#fff" d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></g>
+        </svg>
+      </div>
+      <div class="nb-logo-text">
+        <div class="nb-logo-name" id="brand-name"></div>
+        <div class="nb-logo-sub"><span class="nb-logo-dot"></span><span id="brand-sub"></span></div>
+      </div>
+    </div>
+    <div class="nb-right">
+      <div class="nb-live"><span class="nb-live-dot"></span>LIVE</div>
+      <div class="nb-clock" id="clk">--:--:--</div>
+    </div>
+    <button class="nb-hamburger" id="nb-hamburger" aria-label="Menu" onclick="toggleDrawer()"><span></span><span></span><span></span></button>
+  </div>
+  <div class="nb-tabs" id="nb-tabs"></div>
+</div>
+</div>
+<div class="nb-drawer" id="t-drawer"></div>
+
+<!-- ═══ PAGES ═══ -->
+<div class="pg on" id="pg-home">
+  <div class="page-hero" id="hero-home"></div>
+  <div class="mstrip ms4" id="ms-home"></div>
+  <p class="sl"><span class="sl-d" style="background:var(--blu)"></span>Sections</p>
+  <div class="term-row" id="home-sections"></div>
+  <p class="sl"><span class="sl-d" style="background:var(--t3)"></span>Quick access</p>
+  <div class="ql-grid" id="home-quick"></div>
+</div>
+
+<div class="pg" id="pg-section">
+  <div class="bc" id="sec-bc"></div>
+  <div class="page-hero" id="hero-section"></div>
+  <div class="mstrip ms4" id="ms-section"></div>
+  <p class="sl"><span class="sl-d" style="background:var(--blu)"></span>Groups — tap to browse</p>
+  <div class="grp-grid" id="sec-groups"></div>
+</div>
+
+<div class="pg" id="pg-nodes">
+  <div class="bc" id="nv-bc"></div>
+  <div class="page-hero" id="hero-nodes"></div>
+  <div class="bar">
+    <input type="text" id="nv-q" placeholder="Search name, IP, serial, tag, type…" oninput="renderNodes()"/>
+    <button type="button" class="btn btn-g" onclick="exportNodes('xlsx')">⬇ Excel</button>
+    <button type="button" class="btn btn-b" onclick="exportNodes('csv')">⬇ CSV</button>
+  </div>
+  <div id="nv-list"></div>
+  <div class="tf" id="nv-rc"></div>
+</div>
+
+<div class="pg" id="pg-missing">
+  <div class="bc"><span class="bc-a" onclick="nav('home')">Home</span><span class="bc-sep">/</span><span class="bc-cur">Missing Tags</span></div>
+  <div class="page-hero" id="hero-missing"></div>
+  <div class="miss-tabs">
+    <button type="button" class="miss-tab on" data-k="tag" onclick="setMiss('tag')">Without tag <b id="miss-n-tag">0</b></button>
+    <button type="button" class="miss-tab" data-k="sn" onclick="setMiss('sn')">Without serial <b id="miss-n-sn">0</b></button>
+  </div>
+  <div id="miss-list"></div>
+</div>
+
+<!-- Detail modal (filled by openNode) -->
+<div class="nd-overlay" id="nd-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="nd-card" id="nd-card" role="dialog" aria-modal="true" aria-labelledby="nd-title"></div>
+</div>
+
+<script src="assets/app.js"></script>
+</body>
+</html>
