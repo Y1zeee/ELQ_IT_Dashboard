@@ -81,8 +81,8 @@ const E2GTU_ROWS = [
   {node:'ELQ2GTU005',ip:'57.1.174.220',type:'Computer',sn:'8CC3200SSF',model:'HP Elite Mini 600 G9'},{node:'ELQ2GTU005',ip:'57.1.174.220',type:'Monitor',sn:'CNK3020RLL',model:'HP Series 3 Pro 322pf'},{node:'ELQ2GTU005',ip:'57.1.174.220',type:'Boarding Pass Printer (ATB)',sn:'MEC3008823110079',model:'CUSTOM TK180'},{node:'ELQ2GTU005',ip:'57.1.174.220',type:'Boarding Gate Reader (BGR)',sn:'1617220626',model:'ACCESS BGR 135'},
   {node:'ELQ2GTU006',ip:'57.1.174.209',type:'Computer',sn:'8CC3200SSN',model:'HP Elite Mini 600 G9'},{node:'ELQ2GTU006',ip:'57.1.174.209',type:'Monitor',sn:'CNK3020SWW',model:'HP Series 3 Pro 322pf'},{node:'ELQ2GTU006',ip:'57.1.174.209',type:'Boarding Pass Printer (ATB)',sn:'MEC3882311020',model:'CUSTOM TK180'},{node:'ELQ2GTU006',ip:'57.1.174.209',type:'Boarding Gate Reader (BGR)',sn:'8CC3200SSF',model:'DESKO BGR504 PRO'},{node:'ELQ2GTU006',ip:'57.1.174.209',type:'Document Printer (DCP)',sn:'X3TN003165',model:'EPSON FX-890II'},{node:'ELQ2GTU006',ip:'57.1.174.209',type:'LaserJet Printer',sn:'PHCBR5H1DW',model:'LaserJet Enterprise M507'},
   // GTU007/008: node and IP known; asset details (serial, SITA tag, model) not recorded yet
-  {node:'ELQ2GTU007',ip:'57.1.174.221',type:'Workstation',sn:'',model:'',loc:'Gate 1 Workstation'},
-  {node:'ELQ2GTU008',ip:'57.1.174.222',type:'Workstation',sn:'',model:'',loc:'Gate 4 Workstation'},
+  {node:'ELQ2GTU007',ip:'57.1.174.221',type:'Workstation',sn:'',model:'',loc:'Gate 7 Workstation'},
+  {node:'ELQ2GTU008',ip:'57.1.174.222',type:'Workstation',sn:'',model:'',loc:'Gate 8 Workstation'},
 ];
 
 // ELQ-1 DDC grouped by type
