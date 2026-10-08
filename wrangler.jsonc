@@ -4,6 +4,7 @@
   "assets": {
     "directory": "./public"
   },
+  "previews": {},
   "observability": {
     "logs": {
       "enabled": true,
