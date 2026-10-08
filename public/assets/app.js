@@ -536,62 +536,102 @@ const E2_GROUPS = [
 
 
 
-// ─── MODAL ───
-function showNodeDetail(g, nodeName, assets) {
-  var ov = document.getElementById('modal-overlay');
-  if (!ov) return;
-  assets = Array.isArray(assets) ? assets : [];
-  var ip = assets.length ? assets[0].ip : '—';
+// ─── NODE DETAIL CARD ───
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function dashv(v){return (v&&v!=='—')?v:'—';}
 
-  document.getElementById('modal-title').textContent = nodeName;
-  document.getElementById('modal-title').style.color = g.color;
-  document.getElementById('modal-sub').textContent = g.name + ' · ' + g.desc + ' · ' + g.loc;
+// node → switch/port lookup (FIDS distribution)
+const NODE_SW = {};
+[FIDS_MAP_E1, FIDS_MAP_E2].forEach(function(map){
+  map.forEach(function(s){ s.nodes.forEach(function(n){ NODE_SW[n.node||n.dev] = {sw:s.sw, port:n.port}; }); });
+});
 
-  var info = '';
-  var pairs = [['IP ADDRESS',ip],['GROUP',g.name],['ASSETS',assets.length],
-               ['TERMINAL',curTerm],['LOCATION',g.loc],['TYPE',g.desc]];
-  pairs.forEach(function(p){
-    info += '<div style="background:#111E30;border:1px solid #1A3050;border-radius:8px;padding:10px 12px;">' +
-            '<div style="font-size:9px;font-weight:600;font-family:JetBrains Mono,monospace;color:#2A4060;letter-spacing:.07em;margin-bottom:4px;">' + p[0] + '</div>' +
-            '<div style="font-size:12px;font-weight:500;color:#EAF2FF;">' + p[1] + '</div></div>';
-  });
-  document.getElementById('modal-info').innerHTML = info;
-  document.getElementById('modal-assets-lbl').textContent = 'ASSET LIST — ' + assets.length + ' items';
-  document.getElementById('modal-assets-lbl').style.color = '#9BB4D0';
-
-  var hasLoc = assets.some(function(a){ return a.loc; });
-  document.getElementById('modal-thead').innerHTML =
-    '<th style="font-family:JetBrains Mono,monospace;font-size:9px;color:#9BB4D0;letter-spacing:.07em;text-align:left;padding:7px 11px;border-bottom:1px solid #1A3050;">#</th>' +
-    '<th style="font-family:JetBrains Mono,monospace;font-size:9px;color:#9BB4D0;letter-spacing:.07em;text-align:left;padding:7px 11px;border-bottom:1px solid #1A3050;">TYPE</th>' +
-    '<th style="font-family:JetBrains Mono,monospace;font-size:9px;color:#9BB4D0;letter-spacing:.07em;text-align:left;padding:7px 11px;border-bottom:1px solid #1A3050;">MODEL</th>' +
-    '<th style="font-family:JetBrains Mono,monospace;font-size:9px;color:#9BB4D0;letter-spacing:.07em;text-align:left;padding:7px 11px;border-bottom:1px solid #1A3050;">SERIAL</th>' +
-    '<th style="font-family:JetBrains Mono,monospace;font-size:9px;color:#9BB4D0;letter-spacing:.07em;text-align:left;padding:7px 11px;border-bottom:1px solid #1A3050;">ASSET TAG</th>' +
-    (hasLoc ? '<th style="font-family:JetBrains Mono,monospace;font-size:9px;color:#9BB4D0;letter-spacing:.07em;text-align:left;padding:7px 11px;border-bottom:1px solid #1A3050;">LOCATION</th>' : '');
-  var rows = assets.map(function(a, i){
-    return '<tr>' +
-      '<td style="padding:7px 11px;border-bottom:1px solid #1A3050;font-family:JetBrains Mono,monospace;font-size:9px;color:#829AB5;">' + (i+1) + '</td>' +
-      '<td style="padding:7px 11px;border-bottom:1px solid #1A3050;font-weight:500;color:#EAF2FF;">'  + (a.type  || '—') + '</td>' +
-      '<td style="padding:7px 11px;border-bottom:1px solid #1A3050;font-family:JetBrains Mono,monospace;font-size:11px;color:#A0B8D4;">' + (a.model || '—') + '</td>' +
-      '<td style="padding:7px 11px;border-bottom:1px solid #1A3050;font-family:JetBrains Mono,monospace;font-size:10px;color:#5A7A9A;">' + (a.sn    || '—') + '</td>' +
-      '<td style="padding:7px 11px;border-bottom:1px solid #1A3050;font-family:JetBrains Mono,monospace;font-size:9.5px;color:#9BB4D0;">' + (a.xid   || '—') + '</td>' +
-      (hasLoc ? '<td style="padding:7px 11px;border-bottom:1px solid #1A3050;font-size:10px;color:#9BB4D0;">' + (a.loc || '') + '</td>' : '') +
-      '</tr>';
-  }).join('');
-  document.getElementById('modal-tbody').innerHTML = rows || '<tr><td colspan="5" style="padding:16px 11px;color:#9BB4D0;text-align:center;">No asset records found</td></tr>';
-
-  ov.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
+function ndFact(label, val, mono){
+  var v = dashv(val);
+  return '<button type="button" class="nd-fact' + (label==='SITA tag' ? ' sita' : '') + '"' + (v==='—' ? ' disabled' : '') + ' onclick="copyFact(this)" title="Click to copy">' +
+    '<span class="nd-fl">' + label + '</span>' +
+    '<span class="nd-fv' + (mono ? ' mono' : '') + '">' + esc(v) + '</span></button>';
 }
 
-function closeModal() {
-  var ov = document.getElementById('modal-overlay');
-  if (ov) ov.style.display = 'none';
+function openNode(o){
+  var ov = document.getElementById('nd-overlay');
+  var card = document.getElementById('nd-card');
+  if (!ov || !card) return;
+  var assets = o.assets || [];
+  var one = assets.length === 1 ? assets[0] : null;
+  var sw = NODE_SW[o.name];
+  var facts = '';
+  if (one) {
+    facts += ndFact('Serial number', one.sn, 1) + ndFact('SITA tag', one.xid, 1) +
+             ndFact('Location', one.loc || o.loc) + ndFact('IP address', one.ip || o.ip, 1) +
+             ndFact('Model', one.model) + ndFact('Type', one.type);
+  } else {
+    facts += ndFact('IP address', o.ip, 1) + ndFact('Location', o.loc) +
+             ndFact('Group', o.group) + ndFact('Assets', String(assets.length));
+  }
+  if (sw) facts += ndFact('Switch', sw.sw, 1) + ndFact('Port', 'Port ' + sw.port, 1);
+  facts += ndFact('Terminal', o.term);
+
+  var list = '';
+  if (!one && assets.length) {
+    list = '<div class="nd-sec">ASSETS · ' + assets.length + '</div><div class="nd-assets">' +
+      assets.map(function(a){
+        return '<div class="nd-asset">' +
+          '<div class="nd-asset-top"><span class="nd-asset-type">' + esc(a.type||'—') + '</span><span class="nd-asset-model">' + esc(a.model||'—') + '</span></div>' +
+          '<div class="nd-asset-kv"><button type="button" onclick="copyFact(this)" ' + (dashv(a.sn)==='—'?'disabled':'') + '><i>SERIAL</i><b>' + esc(dashv(a.sn)) + '</b></button>' +
+          '<button type="button" class="sita" onclick="copyFact(this)" ' + (dashv(a.xid)==='—'?'disabled':'') + '><i>SITA TAG</i><b>' + esc(dashv(a.xid)) + '</b></button></div>' +
+          '</div>';
+      }).join('') + '</div>';
+  }
+
+  card.style.setProperty('--c', o.color || 'var(--blu)');
+  card.innerHTML =
+    '<div class="nd-head">' +
+      '<div class="nd-badges"><span class="nd-badge">' + esc(o.group||'') + '</span><span class="nd-badge dim">' + esc(o.term||'') + '</span></div>' +
+      '<button type="button" class="nd-x" onclick="closeModal()" aria-label="Close">✕</button>' +
+      '<h2 id="nd-title">' + esc(o.name) + '</h2>' +
+      '<p>' + esc(o.desc||'') + '</p>' +
+    '</div>' +
+    '<div class="nd-body"><div class="nd-facts">' + facts + '</div>' + list + '</div>';
+  ov.classList.add('on');
+  document.body.style.overflow = 'hidden';
+  var x = card.querySelector('.nd-x'); if (x) x.focus();
+}
+
+function copyFact(btn){
+  var el = btn.querySelector('.nd-fv') || btn.querySelector('b');
+  if (!el) return;
+  var txt = el.textContent;
+  var done = function(){ btn.classList.add('copied'); setTimeout(function(){ btn.classList.remove('copied'); }, 900); };
+  try { navigator.clipboard.writeText(txt).then(done, function(){}); } catch (e) {}
+}
+
+function closeModal(){
+  var ov = document.getElementById('nd-overlay');
+  if (ov) ov.classList.remove('on');
   document.body.style.overflow = '';
 }
 
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function(e){
   if (e.key === 'Escape') closeModal();
 });
+
+// ─── PAGE HERO (reception banner shown on every page) ───
+function heroHTML(c){
+  return '<section class="dash-hero">' +
+    '<div class="dash-hero-copy">' +
+      '<div class="dash-hero-kicker"><span class="dash-hero-pulse"></span> ' + c.kicker + '</div>' +
+      '<h1>' + c.title + '</h1>' +
+      '<p>' + c.text + '</p>' +
+      '<div class="dash-hero-meta">' + c.meta.map(function(m){ return '<span><b>' + m[0] + '</b> ' + m[1] + '</span>'; }).join('') + '</div>' +
+    '</div>' +
+    '<div class="dash-hero-orbit" aria-hidden="true">' +
+      '<div class="hero-orbit-ring hero-orbit-ring-a"></div><div class="hero-orbit-ring hero-orbit-ring-b"></div>' +
+      '<div class="hero-orbit-core"><span>' + c.core + '</span><small>ONLINE</small></div>' +
+      '<div class="hero-plane">✈</div>' +
+      '<i class="hero-node hero-node-a"></i><i class="hero-node hero-node-b"></i><i class="hero-node hero-node-c"></i>' +
+    '</div></section>';
+}
 
 
 // ── Subtle tech particle animation on home page ──
@@ -696,7 +736,7 @@ function nav(id){
   if(pg) pg.classList.add('on');
   // Tabs — use data-page attribute for reliable matching
   document.querySelectorAll('.nt[data-page]').forEach(b=>{
-    b.classList.toggle('on', b.dataset.page===id);
+    b.classList.toggle('on', b.dataset.page===(id==='invterm'?'inventory':id==='nodes'?(nvTerm==='ELQ-2'?'elq2':nvTerm==='ELQ-1'?'elq1':'home'):id));
   });
   window.scrollTo({top:0,behavior:'instant'});
 }
@@ -735,37 +775,16 @@ setInterval(()=>{document.getElementById('clk').textContent=new Date().toLocaleT
 document.getElementById('clk').textContent=new Date().toLocaleTimeString();
 
 // ─────────────────────────────────────────
-//  ON-DUTY ROTATION
-// ─────────────────────────────────────────
-const DUTY_TEAM = ['Zaid','Rakan','Abdulaziz','Fahad'];
-const DUTY_SHIFTS = [
-  {start:6, end:14, label:'06:00 – 14:00'},
-  {start:14, end:22, label:'14:00 – 22:00'},
-  {start:22, end:30, label:'22:00 – 06:00'}
-];
-function updateDutyPanel(){
-  const now = new Date();
-  const hour = now.getHours() + now.getMinutes() / 60;
-  const shift = DUTY_SHIFTS.find(s => hour >= s.start || (s.start === 22 && hour < 6)) || DUTY_SHIFTS[0];
-  const dayIndex = Math.floor(new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 86400000);
-  const shiftIndex = DUTY_SHIFTS.indexOf(shift);
-  const person = DUTY_TEAM[(dayIndex + shiftIndex) % DUTY_TEAM.length];
-  const personEl = document.getElementById('duty-person');
-  const shiftEl = document.getElementById('duty-shift');
-  if (personEl) personEl.textContent = person;
-  if (shiftEl) shiftEl.textContent = shift.label + ' · ELQ IT';
-}
-updateDutyPanel();
-setInterval(updateDutyPanel, 60000);
-
-// ─────────────────────────────────────────
 //  BUILD GROUP GRID
 // ─────────────────────────────────────────
+// Real asset count (some nodes have fewer records than assetPer suggests)
+const grpAssets = g => g.nodes.reduce((a,n)=>a+g.getA(n).length,0);
+
 function buildGrpGrid(elId,groups,term){
   const el=document.getElementById(elId);
   el.innerHTML='';
   groups.forEach(g=>{
-    const totalAssets=g.nodes.length*g.assetPer;
+    const totalAssets=grpAssets(g);
     const d=document.createElement('div');
     d.className='grp';
     d.innerHTML=`
@@ -801,8 +820,10 @@ function openGrp(g,term){
     <span class="bc-a" onclick="nav('${term==='ELQ-1'?'elq1':'elq2'}')">${term}</span>
     <span class="bc-sep">/</span>
     <span class="bc-cur" style="color:${g.color}">${g.name}</span>`;
+  setHero('hero-grp',{kicker:`${term} · ${g.desc.toUpperCase()}`,title:g.name,core:g.name,
+    text:`${g.desc} — ${g.loc}.`,meta:[[g.nodes.length,'nodes'],[grpAssets(g),'assets']]});
   // Metrics
-  const totalA=g.nodes.length*g.assetPer;
+  const totalA=grpAssets(g);
   document.getElementById('grp-metrics').innerHTML=`
     <div class="mcard" style="--mc-c:${g.color}"><div class="mv">${g.nodes.length}</div><div class="ml">Nodes</div></div>
     <div class="mcard" style="--mc-c:var(--amb)"><div class="mv">${totalA}</div><div class="ml">Assets</div></div>
@@ -825,108 +846,133 @@ function filterGrp(){
 }
 
 // Node store
-var _nodeStore = {};
+var _grpNodes = [];
+
+function typeChips(assets){
+  var tc = {};
+  assets.forEach(function(a){ var t = a.type || '—'; tc[t] = (tc[t]||0) + 1; });
+  var ents = Object.keys(tc);
+  var out = ents.slice(0,2).map(function(t){
+    return '<span class="nc-chip" title="' + esc(t) + '">' + esc(t) + (tc[t] > 1 ? ' ×' + tc[t] : '') + '</span>';
+  }).join('');
+  if (ents.length > 2) out += '<span class="nc-chip more">+' + (ents.length - 2) + '</span>';
+  return out;
+}
 
 function renderGrp(g, q) {
   var list = document.getElementById('grp-devlist');
   if (!list) return;
   list.innerHTML = '';
-  _nodeStore = {};
+  _grpNodes = [];
   var shown = 0;
   var qLow = q ? q.toLowerCase() : '';
 
-  g.nodes.forEach(function(nodeName, ni) {
+  g.nodes.forEach(function(nodeName) {
     var assets = g.getA(nodeName);
     var ip = assets.length ? assets[0].ip : '—';
-
     var matched = !qLow
       || nodeName.toLowerCase().indexOf(qLow) >= 0
+      || (ip||'').toLowerCase().indexOf(qLow) >= 0
       || assets.some(function(a) {
            return (a.sn||'').toLowerCase().indexOf(qLow) >= 0
+               || (a.xid||'').toLowerCase().indexOf(qLow) >= 0
                || (a.type||'').toLowerCase().indexOf(qLow) >= 0
-               || (a.model||'').toLowerCase().indexOf(qLow) >= 0;
+               || (a.model||'').toLowerCase().indexOf(qLow) >= 0
+               || (a.loc||'').toLowerCase().indexOf(qLow) >= 0;
          });
     if (!matched) return;
     shown++;
 
-    // Build card
-    var assetRowsHtml = assets.map(function(a) {
-      return '<div class="gnc-asset-row">' +
-        '<div class="gnc-asset-type">' + (a.type || '—') + '</div>' +
-        '<div class="gnc-asset-model">' + (a.model || '—') + '</div>' +
-        '<div class="gnc-asset-meta"><span>' + (a.sn || '—') + '</span><span>' + (a.xid || '—') + '</span></div>' +
-        '</div>';
-    }).join('');
-
-    var card = document.createElement('div');
-    card.className = 'grp-node-card';
-    card.style.cssText = 'border-left-color:' + g.color + ';';
+    var idx = _grpNodes.push({
+      name:nodeName, color:g.color, group:g.name, desc:g.desc, loc:g.loc, term:curTerm, ip:ip, assets:assets
+    }) - 1;
+    var single = assets.length === 1 ? assets[0] : null;
+    var card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'nc';
+    card.style.setProperty('--c', g.color);
+    card.setAttribute('onclick', 'openNode(_grpNodes[' + idx + '])');
     card.innerHTML =
-      '<div class="gnc-top">' +
-        '<div>' +
-          '<div class="gnc-name">' + nodeName + '</div>' +
-          '<div class="gnc-ip">' + ip + '</div>' +
-        '</div>' +
-        '<div class="gnc-count" style="color:' + g.color + '">' + assets.length + '<span>assets</span></div>' +
-      '</div>' +
-      '<div class="gnc-assets">' + assetRowsHtml + '</div>' +
-      '<div class="gnc-foot">' +
-        '<span class="gnc-loc">' + g.loc + '</span>' +
-      '</div>';
-
+      '<div class="nc-top"><span class="nc-name">' + esc(nodeName) + '</span><span class="nc-n">' + assets.length + '</span></div>' +
+      '<div class="nc-ip">' + esc(ip) + '</div>' +
+      '<div class="nc-chips">' + (single && single.loc ? '<span class="nc-chip loc">' + esc(single.loc) + '</span>' : typeChips(assets)) + '</div>';
     list.appendChild(card);
   });
 
   var rc = document.getElementById('grp-rc');
-  if (rc) rc.textContent = 'Showing ' + shown + ' of ' + g.nodes.length + ' nodes';
+  if (rc) rc.textContent = 'Showing ' + shown + ' of ' + g.nodes.length + ' nodes · tap a card for details';
 }
-
-
-function _unused_openNodeModal(key) {
-  var entry = _nodeStore[key];
-  if (!entry) { console.error('No entry for key:', key); return; }
-  showNodeDetail(entry.g, entry.nodeName, entry.assets);
-}
-
 
 // ─────────────────────────────────────────
 //  FIDS
 // ─────────────────────────────────────────
+var FIDS_OPEN = {f1:new Set(), f2:new Set()};
+var _fidsNodes = {f1:[], f2:[]};
+const FIDS_BY_NODE = {};
+FIDS1.concat(FIDS2).forEach(function(r){ FIDS_BY_NODE[r.node] = r; });
+
 ['f1','f2'].forEach(s=>{
   const data=s==='f1'?FIDS1:FIDS2;
   const sel=document.getElementById('g'+s);
   [...new Set(data.map(d=>d.group))].sort().forEach(g=>{const o=document.createElement('option');o.value=g;o.textContent=g;sel.appendChild(o);});
 });
+
+function fidsGroupInfo(s, key){
+  var arr = s==='f1' ? E1_GROUPS : E2_GROUPS;
+  return arr.find(function(g){ return g.name === key; }) || {color:'#9D7EF7', desc:key+' display controllers'};
+}
+
+function toggleFidsGrp(s, key){
+  var set = FIDS_OPEN[s];
+  if (set.has(key)) set.delete(key); else set.add(key);
+  rFids(s);
+}
+function fidsAll(s, open){
+  var data = s==='f1' ? FIDS1 : FIDS2;
+  FIDS_OPEN[s] = new Set(open ? data.map(function(d){ return d.group; }) : []);
+  rFids(s);
+}
+function openFidsNode(s,i){ openNode(_fidsNodes[s][i]); }
+
 function rFids(s){
   const data=s==='f1'?FIDS1:FIDS2;
+  const term=s==='f1'?'ELQ-1':'ELQ-2';
   const q=(document.getElementById('s'+s).value||'').toLowerCase();
   const gv=document.getElementById('g'+s).value;
   const cont=document.getElementById(`fids${s==='f1'?1:2}-sec`);
-  cont.innerHTML='';
   const grouped={};
+  _fidsNodes[s] = [];
   data.filter(d=>{
     if(gv!=='all'&&d.group!==gv)return false;
-    if(q&&!d.node.toLowerCase().includes(q)&&!d.sn.toLowerCase().includes(q)&&!d.loc.toLowerCase().includes(q)&&!(d.xid||'').toLowerCase().includes(q))return false;
+    if(q&&!d.node.toLowerCase().includes(q)&&!d.sn.toLowerCase().includes(q)&&!d.loc.toLowerCase().includes(q)&&!(d.xid||'').toLowerCase().includes(q)&&!(d.ip||'').includes(q))return false;
     return true;
   }).forEach(d=>{if(!grouped[d.group])grouped[d.group]=[];grouped[d.group].push(d);});
-  let tot=0;
-  const c=s==='f1'?'var(--pur)':'var(--tel)';
+  let tot=0, html='';
   Object.entries(grouped).forEach(([gk,rows])=>{
     tot+=rows.length;
-    cont.innerHTML+=`<div class="fb">
-      <div class="fb-hdr">
-        <span class="fb-name" style="color:${c}">${gk}</span>
-        <span class="fb-info" style="margin-left:8px">${rows[0]?.loc||''}</span>
-        <span class="badge ${s==='f1'?'bp':'bt'}" style="margin-left:auto">${rows.length}</span>
-      </div>
-      <div class="tw" style="max-height:220px;border-radius:0 0 var(--r8) var(--r8)">
-        <table><thead><tr><th>ASSET TAG</th><th>NODE</th><th>IP ADDRESS</th><th>SERIAL</th><th>MODEL</th><th>LOCATION</th></tr></thead>
-        <tbody>${rows.map(d=>`<tr><td class="td-xid">${d.xid||'—'}</td><td class="td-n">${d.node}</td><td class="td-ip">${d.ip}</td><td class="td-sn">${d.sn}</td><td style="color:var(--t1)">${d.model}</td><td style="color:var(--t1)">${d.loc}</td></tr>`).join('')}</tbody>
-        </table>
-      </div>
+    const gi=fidsGroupInfo(s,gk);
+    const open=q||gv!=='all'||FIDS_OPEN[s].has(gk);
+    const cards=open?rows.map(d=>{
+      const i=_fidsNodes[s].push({name:d.node,color:gi.color,group:gk,desc:gi.desc,loc:d.loc,term:term,ip:d.ip,
+        assets:[{ip:d.ip,xid:d.xid,sn:d.sn,type:'FIDS Screen',model:d.model,loc:d.loc}]})-1;
+      return `<button type="button" class="nc" style="--c:${gi.color}" onclick="openFidsNode('${s}',${i})">
+        <div class="nc-top"><span class="nc-name">${esc(d.node)}</span></div>
+        <div class="nc-ip">${esc(d.ip)}</div>
+        <div class="nc-chips"><span class="nc-chip loc">${esc(d.loc)}</span></div></button>`;
+    }).join(''):'';
+    html+=`<div class="fsec${open?' open':''}" style="--c:${gi.color}">
+      <button type="button" class="fsec-hdr" onclick="toggleFidsGrp('${s}','${gk}')" aria-expanded="${open?'true':'false'}">
+        <span class="fsec-bar"></span>
+        <span class="fsec-name">${gk}</span>
+        <span class="fsec-desc">${esc(gi.desc)}</span>
+        <span class="fsec-count">${rows.length}</span>
+        <span class="fsec-chev">▾</span>
+      </button>
+      ${open?`<div class="nc-grid fsec-body">${cards}</div>`:''}
     </div>`;
   });
-  document.getElementById(`rc-${s}`).textContent=`${tot} screens`;
+  cont.innerHTML=html||'<div class="empty-note">No screens match your search.</div>';
+  document.getElementById(`rc-${s}`).textContent=`${tot} screens · tap a card for serial, SITA tag & location`;
 }
 rFids('f1'); rFids('f2');
 
@@ -1037,67 +1083,333 @@ function buildPortMap() {
 }
 buildPortMap();
 
-// FIDS MAP renderer
-function buildFm(id, data, color) {
+// FIDS MAP renderer — one card per switch, one tile per node (tap for details)
+var _fmNodes = [];
+function openFmNode(i){ openNode(_fmNodes[i]); }
+function buildFm(id, data, color, term, groupsArr) {
   const el = document.getElementById(id);
-  el.innerHTML = '';
+  let html = '';
   data.forEach(s => {
-    const rows = s.nodes.map(n => `
-      <div class="pm-fids-row">
-        <span class="pm-fids-pt">${n.port||'—'}</span>
-        <span class="pm-fids-node">${n.node||n.dev||'—'}</span>
-        <span class="pm-fids-ip">${n.ip||''}</span>
-      </div>`).join('');
-    el.innerHTML += `
-      <div class="pm-fids-card" style="--fids-c:${color}">
-        <div class="pm-fids-hdr">
-          <div class="pm-fids-accent"></div>
-          <div class="pm-fids-info">
-            <div class="pm-fids-sw">${s.sw}</div>
-            <div class="pm-fids-room">${s.room}</div>
-          </div>
-          <span class="pm-fids-badge badge" style="background:${color}18;color:${color};border:1px solid ${color}30;">${s.nodes.length} nodes</span>
+    const tiles = s.nodes.map(n => {
+      const name = n.node || n.dev || '—';
+      const r = FIDS_BY_NODE[name] || {};
+      const gname = (name.match(/-([A-Z]{2}-DDC)/) || [])[1] || 'DDC';
+      const gi = groupsArr.find(g => g.name === gname) || {color:color, desc:'Display controller'};
+      const i = _fmNodes.push({name:name, color:gi.color, group:gname, desc:gi.desc, loc:n.loc||r.loc, term:term, ip:n.ip||r.ip,
+        assets:[{ip:n.ip||r.ip, xid:r.xid, sn:r.sn, type:'FIDS Screen', model:r.model, loc:n.loc||r.loc}]}) - 1;
+      return `<button type="button" class="pf-tile" onclick="openFmNode(${i})">
+        <span class="pf-port">${n.port||'—'}</span>
+        <span class="pf-txt"><b>${esc(name)}</b><i>${esc(n.loc||r.loc||'')}</i></span>
+      </button>`;
+    }).join('');
+    html += `
+      <div class="pf-card" style="--c:${color}">
+        <div class="pf-hdr">
+          <div><div class="pf-sw">${esc(s.sw)}</div><div class="pf-room">${esc(s.room)}</div></div>
+          <span class="pf-count">${s.nodes.length} nodes</span>
         </div>
-        <div class="pm-fids-rows">${rows}</div>
+        <div class="pf-tiles">${tiles}</div>
       </div>`;
   });
+  el.innerHTML = html;
 }
-buildFm('fm-e1', FIDS_MAP_E1, '#9D7EF7');
-buildFm('fm-e2', FIDS_MAP_E2, '#1FD8C8');
+buildFm('fm-e1', FIDS_MAP_E1, '#9D7EF7', 'ELQ-1', E1_GROUPS);
+buildFm('fm-e2', FIDS_MAP_E2, '#1FD8C8', 'ELQ-2', E2_GROUPS);
 
 
 // ─────────────────────────────────────────
-//  INVENTORY BARS
+//  INVENTORY — two big terminal cards → category cards
 // ─────────────────────────────────────────
-function mkInvBars(id,data,color){
-  const el=document.getElementById(id);
-  if(!el)return;
-  const max=Math.max(...data.map(d=>d.assets));
-  [...data].sort((a,b)=>b.assets-a.assets).forEach(d=>{
-    const p=Math.round(d.assets/max*100);
-    el.innerHTML+=`<div class="br"><span class="br-l">${d.cat}</span><div class="br-t"><div class="br-f" style="width:${p}%;background:${color}"></div></div><span class="br-v">${d.assets}</span><span class="br-d">${d.loc}</span></div>`;
-  });
+const INV_TERMS = {
+  'ELQ-1': {data:INV_E1, groups:E1_GROUPS, color:'#59C7FF', title:'Terminal 1', cls:'t1'},
+  'ELQ-2': {data:INV_E2, groups:E2_GROUPS, color:'#2CE0D0', title:'Terminal 2', cls:'t2'}
+};
+const CORE_CAT_DESC = {'CSF-W':'Cisco Security Firewall','SSS':'Core Switches','ESXI':'ESXi Servers','VASL':'Storage Server',
+  'PFMN':'PFM Servers','SAN':'SAN Storage','PROXY':'Proxy Server','BOC':'Back Office Computer'};
+const invSum = d => d.reduce((a,x)=>a+x.assets,0);
+function invGroup(term,cat){
+  const name = cat==='EGATE' ? 'PFM' : cat;
+  return INV_TERMS[term].groups.find(g=>g.name.toUpperCase()===name);
 }
-mkInvBars('inv-b1',INV_E1,'var(--blu)');
-mkInvBars('inv-b2',INV_E2,'var(--tel)');
 
-function rInv(){
-  const q=(document.getElementById('sinv').value||'').toLowerCase();
-  const tf=document.getElementById('ginv').value;
-  const all=[...INV_E1.map(d=>({...d,term:'ELQ-1'})),...INV_E2.map(d=>({...d,term:'ELQ-2'})),...INV_SPARE.map(d=>({...d,term:'Spare'}))].filter(d=>{
-    if(tf!=='all'&&d.term!==tf)return false;
-    if(q&&!d.cat.toLowerCase().includes(q)&&!d.loc.toLowerCase().includes(q))return false;
-    return true;
-  });
-  document.getElementById('tb-inv').innerHTML=all.map(d=>`<tr>
-    <td><span class="badge ${d.term==='ELQ-1'?'bb':d.term==='ELQ-2'?'bt':'ba'}">${d.term}</span></td>
-    <td class="td-n">${d.cat}</td>
-    <td style="color:var(--t1)">${d.loc}</td>
-    <td style="text-align:right;font-family:var(--mono);font-weight:700;color:var(--t0)">${d.assets}</td>
-  </tr>`).join('');
-  document.getElementById('rc-inv').textContent=`${all.length} groups`;
+function buildInvCards(){
+  const el = document.getElementById('inv-cards');
+  if(!el) return;
+  el.innerHTML = Object.entries(INV_TERMS).map(([term,t])=>{
+    const tot = invSum(t.data);
+    const sorted = [...t.data].sort((a,b)=>b.assets-a.assets);
+    const stack = sorted.slice(0,8).map((d,i)=>`<i style="width:${d.assets/tot*100}%;opacity:${1-i*.09}"></i>`).join('');
+    const legend = sorted.slice(0,6).map(d=>`<span><b>${d.assets}</b> ${d.cat}</span>`).join('');
+    return `<div class="inv-big ${t.cls}" style="--c:${t.color}" role="button" tabindex="0" onclick="openInvTerm('${term}')" onkeydown="if(event.key==='Enter')openInvTerm('${term}')">
+      <div class="tcard-top"><span class="tbadge ${t.cls}">${term}</span><span class="tarr">→</span></div>
+      <div class="inv-big-title">${t.title} Inventory</div>
+      <div class="inv-big-num">${tot}<span>assets</span></div>
+      <div class="inv-big-sub">${t.data.length} categories · tap to browse each one</div>
+      <div class="inv-stack">${stack}</div>
+      <div class="inv-legend">${legend}</div>
+    </div>`;
+  }).join('');
+  const sp = document.getElementById('inv-spare');
+  if(sp) sp.innerHTML = INV_SPARE.map(d=>`<div class="inv-spare"><span class="badge ba">SPARE</span><b>${d.assets}</b> assets in stock <i>· ${d.loc}</i></div>`).join('');
 }
-rInv();
+
+var curInvTerm = null;
+function openInvTerm(term){
+  curInvTerm = term;
+  const t = INV_TERMS[term];
+  document.getElementById('invt-bc').innerHTML = `
+    <span class="bc-a" onclick="nav('home')">Home</span><span class="bc-sep">/</span>
+    <span class="bc-a" onclick="nav('inventory')">Inventory</span><span class="bc-sep">/</span>
+    <span class="bc-cur" style="color:${t.color}">${term}</span>`;
+  setHero('hero-invterm', {kicker:`${term} · INVENTORY`, title:`${term} Inventory`, core:term,
+    text:`Every category in ${t.title}, with its location and asset count.`,
+    meta:[[invSum(t.data),'assets'],[t.data.length,'categories']]});
+  document.getElementById('invt-q').value = '';
+  renderInvTerm();
+  nav('invterm');
+}
+
+function renderInvTerm(){
+  if(!curInvTerm) return;
+  const t = INV_TERMS[curInvTerm];
+  const q = (document.getElementById('invt-q').value||'').toLowerCase();
+  const max = Math.max(...t.data.map(d=>d.assets));
+  const rows = t.data.filter(d=>!q||d.cat.toLowerCase().includes(q)||d.loc.toLowerCase().includes(q));
+  document.getElementById('invt-grid').innerHTML = rows.map(d=>{
+    const g = invGroup(curInvTerm,d.cat);
+    const core = CORE_CAT_DESC[d.cat];
+    const color = g ? g.color : t.color;
+    const desc = g ? g.desc : (core || d.cat);
+    const click = g ? `openGrp(INV_TERMS['${curInvTerm}'].groups.find(x=>x.key==='${g.key}'),'${curInvTerm}')` : (core ? "nav('cabinets')" : '');
+    return `<div class="cat-card${click?' go':''}" style="--c:${color}" ${click?`role="button" tabindex="0" onclick="${click}" onkeydown="if(event.key==='Enter'){${click}}"`:''}>
+      <div class="cat-top"><span class="cat-name">${d.cat}</span><span class="cat-num">${d.assets}</span></div>
+      <div class="cat-desc">${esc(desc)}</div>
+      <div class="cat-loc">${esc(d.loc)}</div>
+      <div class="cat-bar"><i style="width:${Math.max(4,d.assets/max*100)}%"></i></div>
+      <div class="cat-foot"><span>${g?g.nodes.length+' nodes':(core?'Core room':'—')}</span><span>${click?(g?'Browse →':'Cabinets →'):''}</span></div>
+    </div>`;
+  }).join('') || '<div class="empty-note">No categories match.</div>';
+  document.getElementById('invt-rc').textContent = `${rows.length} of ${t.data.length} categories`;
+}
+
+// ─────────────────────────────────────────
+//  MISSING DATA — assets without SITA tag / serial number
+// ─────────────────────────────────────────
+const isBlank = v => !v || v === '—';
+const ASSET_RECORDS = (() => {
+  const out = [];
+  [[E1_GROUPS,'ELQ-1'],[E2_GROUPS,'ELQ-2']].forEach(([gs,term]) => gs.forEach(g => g.nodes.forEach(n => {
+    const a = g.getA(n);
+    // A node listed with no asset record is missing both values
+    if (!a.length) out.push({term, g, node:n, type:'No asset record', model:'', sn:'', xid:'', ip:'', loc:g.loc});
+    a.forEach(x => out.push({term, g, node:n, type:x.type || '—', model:x.model || '', sn:isBlank(x.sn) ? '' : x.sn,
+      xid:isBlank(x.xid) ? '' : x.xid, ip:isBlank(x.ip) ? '' : x.ip, loc:x.loc || g.loc}));
+  })));
+  return out;
+})();
+const MISSING = {
+  xid: ASSET_RECORDS.filter(r => !r.xid),
+  sn:  ASSET_RECORDS.filter(r => !r.sn)
+};
+var missKind = 'xid';
+
+function setMissKind(k){
+  missKind = k;
+  document.querySelectorAll('#pg-missing .miss-tab').forEach(b => b.classList.toggle('on', b.dataset.k === k));
+  renderMissing();
+}
+function openMissNode(i){
+  const r = _missShown[i];
+  openNode({name:r.node, color:r.g.color, group:r.g.name, desc:r.g.desc, loc:r.g.loc, term:r.term,
+    ip:r.ip, assets:r.g.getA(r.node)});
+}
+var _missShown = [];
+function renderMissing(){
+  const q = (document.getElementById('miss-q').value || '').toLowerCase();
+  const tv = document.getElementById('miss-t').value;
+  const rows = MISSING[missKind].filter(r =>
+    (tv === 'all' || r.term === tv) &&
+    (!q || [r.node, r.type, r.model, r.sn, r.xid, r.g.name, r.loc].some(v => (v || '').toLowerCase().includes(q))));
+  _missShown = rows;
+  const groups = {};
+  rows.forEach((r,i) => { const k = r.term + ' · ' + r.g.name; (groups[k] = groups[k] || {g:r.g, items:[]}).items.push(i); });
+  const other = missKind === 'xid' ? 'sn' : 'xid';
+  document.getElementById('miss-list').innerHTML = Object.entries(groups).map(([k,{g,items}]) => `
+    <div class="miss-sec" style="--c:${g.color}">
+      <div class="miss-hdr"><span class="fsec-bar"></span><span class="fsec-name">${esc(k)}</span><span class="fsec-desc">${esc(g.desc)}</span><span class="fsec-count">${items.length}</span></div>
+      <div class="nc-grid">${items.map(i => { const r = rows[i]; return `
+        <button type="button" class="nc" style="--c:${g.color}" onclick="openMissNode(${i})">
+          <div class="nc-top"><span class="nc-name">${esc(r.type)}</span></div>
+          <div class="nc-ip">${esc(r.node)}</div>
+          <div class="miss-model">${esc(r.model || '—')}</div>
+          <div class="nc-chips">
+            <span class="nc-chip miss-flag">${missKind === 'xid' ? 'No SITA tag' : 'No serial'}</span>
+            ${r[other] ? `<span class="nc-chip ${other === 'xid' ? 'miss-sita' : ''}">${esc(r[other])}</span>` : `<span class="nc-chip miss-flag">${other === 'xid' ? 'No SITA tag' : 'No serial'}</span>`}
+          </div>
+        </button>`; }).join('')}</div>
+    </div>`).join('') || '<div class="empty-note">Nothing missing here.</div>';
+  document.getElementById('miss-rc').textContent = `${rows.length} assets · tap a card to see the full node`;
+}
+
+function missSpec(){
+  const label = missKind === 'xid' ? 'without SITA tag' : 'without serial number';
+  const rows = MISSING[missKind].map(r => [r.term, r.g.name, r.node, r.type, r.model, r.ip, r.loc, r.sn, r.xid]);
+  return {file:`ELQ_Assets_${missKind === 'xid' ? 'No_SITA_Tag' : 'No_Serial'}`, sheet:label, band:2, rows,
+    title:`ELQ Airport — Assets ${label} (${rows.length})`,
+    cols:[{h:'TERMINAL'},{h:'GROUP',code:1},{h:'NODE',code:1},{h:'TYPE'},{h:'MODEL'},{h:'IP ADDRESS',code:1},{h:'LOCATION'},{h:'SERIAL NUMBER',code:1},{h:'SITA TAG',code:1,sita:1}]};
+}
+function xlsxMissing(){ doXlsx(missSpec()); }
+function csvMissing(){ doCsv(missSpec()); }
+
+// ─────────────────────────────────────────
+//  NODE VIEWS — clickable counters (nodes / FIDS / workstations / assets)
+// ─────────────────────────────────────────
+const TERM_GROUPS = {'ELQ-1':E1_GROUPS, 'ELQ-2':E2_GROUPS};
+const isFidsGrp = g => /-DDC$/.test(g.name);
+const NODE_KINDS = {
+  all:    {label:'All nodes',    test:() => true,          color:'var(--blu)'},
+  fids:   {label:'FIDS screens', test:isFidsGrp,           color:'var(--pur)'},
+  wks:    {label:'Workstations', test:g => !isFidsGrp(g),  color:'var(--amb)'},
+  assets: {label:'All assets',   test:() => true,          color:'var(--grn)'}
+};
+function termStats(term){
+  const gs = TERM_GROUPS[term], sum = f => gs.filter(f).reduce((a,g) => a + g.nodes.length, 0);
+  return {groups:gs.length, nodes:sum(() => true), fids:sum(isFidsGrp), wks:sum(g => !isFidsGrp(g)),
+          assets:gs.reduce((a,g) => a + grpAssets(g), 0)};
+}
+// Counter tile that opens the matching node view
+function statTile(term, kind, value, label, sub, color){
+  return `<div class="mcard mc-go" role="button" tabindex="0" style="--mc-c:${color}" onclick="openNodeView('${term}','${kind}')" onkeydown="if(event.key==='Enter')openNodeView('${term}','${kind}')">
+    <div class="mv">${value}</div><div class="ml">${label}</div><div class="ms">${sub}</div><span class="mc-arr">→</span></div>`;
+}
+function buildTermStrips(){
+  [['ELQ-1','ms-e1','var(--blu)'],['ELQ-2','ms-e2','var(--tel)']].forEach(([t,id,c]) => {
+    const s = termStats(t), el = document.getElementById(id); if (!el) return;
+    el.innerHTML = statTile(t,'all',s.nodes,'Total Nodes',`${s.groups} groups`,c) +
+      statTile(t,'fids',s.fids,'FIDS Screens','tap to view','var(--pur)') +
+      statTile(t,'wks',s.wks,'Workstations','tap to view','var(--amb)') +
+      statTile(t,'assets',s.assets,'Total Assets','in device groups','var(--grn)');
+  });
+  // Home: terminal cards
+  [['ELQ-1','1','var(--blu)',4],['ELQ-2','2','var(--tel)',3]].forEach(([t,n,c,cab]) => {
+    const s = termStats(t);
+    const sub = document.getElementById('tc-sub-'+n); if (sub) sub.textContent = `${s.groups} device groups · ${s.assets} assets`;
+    const st = document.getElementById('tc-stats-'+n); if (!st) return;
+    const tile = (v,l,col,go) => `<div class="tstat ts-go" role="button" tabindex="0" onclick="event.stopPropagation();${go}" onkeydown="if(event.key==='Enter'){event.stopPropagation();${go}}"><div class="tstat-v" style="color:${col}">${v}</div><div class="tstat-l">${l} →</div></div>`;
+    st.innerHTML = tile(s.nodes,'Nodes',c,`openNodeView('${t}','all')`) + tile(s.fids,'FIDS','var(--pur)',`openNodeView('${t}','fids')`) +
+      tile(s.wks,'WKS','var(--amb)',`openNodeView('${t}','wks')`) + tile(cab,'Cabinets','var(--grn)',"nav('cabinets')");
+  });
+  // Home: top counters
+  const e1 = termStats('ELQ-1'), e2 = termStats('ELQ-2'), hm = document.getElementById('ms-home');
+  if (hm) hm.innerHTML = statTile('ELQ-1','all',e1.nodes,'ELQ-1 Nodes',`${e1.groups} groups`,'var(--blu)') +
+    statTile('ELQ-2','all',e2.nodes,'ELQ-2 Nodes',`${e2.groups} groups`,'var(--tel)') +
+    statTile('both','fids',e1.fids + e2.fids,'FIDS Screens','LG + NEC','var(--pur)') +
+    `<div class="mcard mc-go" role="button" tabindex="0" style="--mc-c:var(--amb)" onclick="nav('inventory')" onkeydown="if(event.key==='Enter')nav('inventory')"><div class="mv">355</div><div class="ml">Total Assets</div><div class="ms">both terminals</div><span class="mc-arr">→</span></div>` +
+    `<div class="mcard mc-go" role="button" tabindex="0" style="--mc-c:var(--grn)" onclick="nav('ports')" onkeydown="if(event.key==='Enter')nav('ports')"><div class="mv">10</div><div class="ml">Switches</div><div class="ms">core + access</div><span class="mc-arr">→</span></div>`;
+}
+
+var nvTerm = 'ELQ-1', nvKind = 'all', _nvNodes = [];
+function openNodeView(term, kind){
+  nvTerm = term; nvKind = kind;
+  const k = NODE_KINDS[kind], terms = term === 'both' ? ['ELQ-1','ELQ-2'] : [term];
+  const tLabel = term === 'both' ? 'Both terminals' : term;
+  const back = term === 'both' ? '' : `<span class="bc-a" onclick="nav('${term === 'ELQ-1' ? 'elq1' : 'elq2'}')">${term}</span><span class="bc-sep">/</span>`;
+  document.getElementById('nv-bc').innerHTML = `<span class="bc-a" onclick="nav('home')">Home</span><span class="bc-sep">/</span>${back}<span class="bc-cur">${k.label}</span>`;
+  const gs = terms.flatMap(t => TERM_GROUPS[t].filter(k.test).map(g => [t,g]));
+  const nodes = gs.reduce((a,[,g]) => a + g.nodes.length, 0), assets = gs.reduce((a,[,g]) => a + grpAssets(g), 0);
+  setHero('hero-nodes', {kicker:`${tLabel.toUpperCase()} · ${k.label.toUpperCase()}`, title:k.label, core:term === 'both' ? 'ELQ' : term,
+    text:`${k.label} in ${tLabel === 'Both terminals' ? 'both terminals' : tLabel}, grouped by system. Tap a card for serial, SITA tag and location.`,
+    meta:[[nodes,'nodes'],[assets,'assets'],[gs.length,'groups']]});
+  document.getElementById('nv-q').value = '';
+  renderNodeView();
+  nav('nodes');
+}
+function renderNodeView(){
+  const k = NODE_KINDS[nvKind], terms = nvTerm === 'both' ? ['ELQ-1','ELQ-2'] : [nvTerm];
+  const q = (document.getElementById('nv-q').value || '').toLowerCase();
+  _nvNodes = [];
+  let shown = 0;
+  const html = terms.flatMap(t => TERM_GROUPS[t].filter(k.test).map(g => {
+    const cards = g.nodes.map(n => {
+      const a = g.getA(n), ip = a.length ? a[0].ip : '—';
+      if (q && ![n, ip, ...a.flatMap(x => [x.sn, x.xid, x.type, x.model, x.loc])].some(v => (v || '').toLowerCase().includes(q))) return '';
+      shown++;
+      const i = _nvNodes.push({name:n, color:g.color, group:g.name, desc:g.desc, loc:g.loc, term:t, ip, assets:a}) - 1;
+      const one = a.length === 1 ? a[0] : null;
+      return `<button type="button" class="nc" style="--c:${g.color}" onclick="openNode(_nvNodes[${i}])">
+        <div class="nc-top"><span class="nc-name">${esc(n)}</span><span class="nc-n">${a.length}</span></div>
+        <div class="nc-ip">${esc(ip || '—')}</div>
+        <div class="nc-chips">${one && one.loc ? `<span class="nc-chip loc">${esc(one.loc)}</span>` : typeChips(a)}</div></button>`;
+    }).join('');
+    if (!cards) return '';
+    return `<div class="miss-sec" style="--c:${g.color}">
+      <div class="miss-hdr"><span class="fsec-bar"></span><span class="fsec-name">${terms.length > 1 ? t + ' · ' : ''}${g.name}</span><span class="fsec-desc">${esc(g.desc)}</span><span class="fsec-count">${g.nodes.length}</span></div>
+      <div class="nc-grid">${cards}</div></div>`;
+  })).join('');
+  document.getElementById('nv-list').innerHTML = html || '<div class="empty-note">No nodes match your search.</div>';
+  document.getElementById('nv-rc').textContent = `${shown} nodes · tap a card for details`;
+}
+function nvExportSpec(){
+  const k = NODE_KINDS[nvKind], terms = nvTerm === 'both' ? ['ELQ-1','ELQ-2'] : [nvTerm], rows = [];
+  terms.forEach(t => TERM_GROUPS[t].filter(k.test).forEach(g => g.nodes.forEach(n => {
+    const a = g.getA(n);
+    if (!a.length) rows.push([t, g.name, n, '', '', '', '', '', '']);
+    a.forEach(x => rows.push([t, g.name, n, blank(x.ip), blank(x.type), blank(x.model), blank(x.sn), blank(x.xid), blank(x.loc)]));
+  })));
+  const tl = nvTerm === 'both' ? 'ELQ' : nvTerm;
+  return {file:`ELQ_${tl}_${k.label.replace(/ /g,'_')}`, sheet:k.label, title:`${tl} — ${k.label}`, band:2, rows,
+    cols:[{h:'TERMINAL'},{h:'GROUP',code:1},{h:'NODE',code:1},{h:'IP ADDRESS',code:1},{h:'TYPE'},{h:'MODEL'},{h:'SERIAL NUMBER',code:1},{h:'SITA TAG',code:1,sita:1},{h:'LOCATION'}]};
+}
+function xlsxNodes(){ doXlsx(nvExportSpec()); }
+function csvNodes(){ doCsv(nvExportSpec()); }
+
+// ─────────────────────────────────────────
+//  HERO BANNERS (shown on every page)
+// ─────────────────────────────────────────
+function setHero(id, cfg){ const el=document.getElementById(id); if(el) el.innerHTML = heroHTML(cfg); }
+const fidsGroups = d => new Set(d.map(x=>x.group)).size;
+const PAGE_HEROES = {
+  elq1:{kicker:'TERMINAL 1 · LIVE NETWORK', title:'ELQ-1', core:'ELQ-1',
+    text:'Check-in, gates, FIDS and core room assets for Terminal 1.', meta:[[termStats('ELQ-1').nodes,'nodes'],[termStats('ELQ-1').assets,'assets'],[FIDS1.length,'FIDS screens']]},
+  elq2:{kicker:'TERMINAL 2 · LIVE NETWORK', title:'ELQ-2', core:'ELQ-2',
+    text:'Check-in, gates, FIDS and public area assets for Terminal 2.', meta:[[termStats('ELQ-2').nodes,'nodes'],[termStats('ELQ-2').assets,'assets'],[FIDS2.length,'FIDS screens']]},
+  fids1:{kicker:'FIDS · ELQ-1', title:'FIDS<br><span>Terminal 1</span>', core:'FIDS',
+    text:'LG digital signage controllers across check-in, gates and arrivals.', meta:[[FIDS1.length,'screens'],[fidsGroups(FIDS1),'groups'],['LG','signage']]},
+  fids2:{kicker:'FIDS · ELQ-2', title:'FIDS<br><span>Terminal 2</span>', core:'FIDS',
+    text:'NEC display controllers across check-in, departures and arrivals.', meta:[[FIDS2.length,'screens'],[fidsGroups(FIDS2),'groups'],['NEC','signage']]},
+  ports:{kicker:'NETWORK · SWITCH MAPPING', title:'Port<br><span>Map</span>', core:'NET',
+    text:'Which device is plugged into which switch port, per room and terminal.', meta:[[10,'switches'],[FIDS1.length+FIDS2.length,'FIDS nodes mapped']]},
+  inventory:{kicker:'ASSET REGISTER', title:'Inventory', core:'INV',
+    text:'Every tracked asset in both terminals, organised by category.', meta:[[355,'assets'],[2,'terminals'],[41,'spare']]},
+  missing:{kicker:'DATA QUALITY · ASSET REGISTER', title:'Missing<br><span>Tags</span>', core:'TAGS',
+    text:'Devices that still have no SITA tag or no serial number, grouped by terminal and system.', meta:[[MISSING.xid.length,'without SITA tag'],[MISSING.sn.length,'without serial']]},
+  summary:{kicker:'EQUIPMENT COUNTS', title:'Summary', core:'SUM',
+    text:'Online and spare equipment totals by system.', meta:[[4,'systems']]}
+};
+function initHeroes(){
+  Object.entries(PAGE_HEROES).forEach(([k,c])=>{
+    const bc = document.querySelector('#pg-'+k+' .bc');
+    if(bc) bc.insertAdjacentHTML('afterend','<div class="page-hero">'+heroHTML(c)+'</div>');
+  });
+}
+initHeroes();
+
+// ─────────────────────────────────────────
+//  HOME — terminal card summaries
+// ─────────────────────────────────────────
+function fillTermCats(){
+  [['tc-cats-1',INV_E1],['tc-cats-2',INV_E2]].forEach(([id,d])=>{
+    const el=document.getElementById(id); if(!el) return;
+    el.innerHTML=[...d].sort((a,b)=>b.assets-a.assets).slice(0,6).map(x=>`<span><b>${x.assets}</b> ${x.cat}</span>`).join('');
+  });
+}
+fillTermCats();
+buildInvCards();
+buildTermStrips();
+renderMissing();
+document.getElementById('ql-miss-count').textContent = `${MISSING.xid.length} no tag · ${MISSING.sn.length} no serial`;
+document.getElementById('miss-n-xid').textContent = MISSING.xid.length;
+document.getElementById('miss-n-sn').textContent = MISSING.sn.length;
 
 // ─────────────────────────────────────────
 //  SUMMARY
@@ -1108,23 +1420,162 @@ rSum('sum-cute',SUM.cute);rSum('sum-pfm',SUM.pfm);rSum('sum-fidsams',SUM.fidsams
 // ─────────────────────────────────────────
 //  EXPORT HELPERS
 // ─────────────────────────────────────────
-function allGrpRows(g){const r=[];g.nodes.forEach(n=>g.getA(n).forEach(a=>r.push(a)));return r;}
-function expGrpXlsx(g){if(typeof XLSX==='undefined'){alert('Loading…');return;}const h=['NODE','IP','ASSET TAG','TYPE','SERIAL','MODEL'];doXlsx(h,allGrpRows(g).map(a=>[a.node,a.ip||'—',a.xid||'—',a.type,a.sn,a.model]),`ELQ_${g.name}`);}
-function expGrpCsv(g){const h=['NODE','IP','ASSET TAG','TYPE','SERIAL','MODEL'];doCsv(h,allGrpRows(g).map(a=>[a.node,a.ip||'—',a.xid||'—',a.type,a.sn,a.model]),`ELQ_${g.name}`);}
-function xlsxF(s){if(typeof XLSX==='undefined'){alert('Loading…');return;}const d=s==='f1'?FIDS1:FIDS2;doXlsx(['ASSET TAG','NODE','IP','GROUP','SERIAL','MODEL','LOCATION'],d.map(r=>[r.xid||'—',r.node,r.ip,r.group,r.sn,r.model,r.loc]),'ELQ_FIDS_'+s.toUpperCase());}
-function csvF(s){const d=s==='f1'?FIDS1:FIDS2;doCsv(['ASSET TAG','NODE','IP','GROUP','SERIAL','MODEL','LOCATION'],d.map(r=>[r.xid||'—',r.node,r.ip,r.group,r.sn,r.model,r.loc]),'ELQ_FIDS_'+s.toUpperCase());}
-function xlsxInv(){if(typeof XLSX==='undefined'){alert('Loading…');return;}const all=[...INV_E1.map(d=>['ELQ-1',d.cat,d.loc,d.assets]),...INV_E2.map(d=>['ELQ-2',d.cat,d.loc,d.assets]),...INV_SPARE.map(d=>['Spare',d.cat,d.loc,d.assets])];doXlsx(['TERMINAL','CATEGORY','LOCATION','ASSETS'],all,'ELQ_Inventory');}
-function csvInv(){const all=[...INV_E1.map(d=>['ELQ-1',d.cat,d.loc,d.assets]),...INV_E2.map(d=>['ELQ-2',d.cat,d.loc,d.assets]),...INV_SPARE.map(d=>['Spare',d.cat,d.loc,d.assets])];doCsv(['TERMINAL','CATEGORY','LOCATION','ASSETS'],all,'ELQ_Inventory');}
-function xlsxSum(s){if(typeof XLSX==='undefined'){alert('Loading…');return;}const d=SUM[s];doXlsx(['#','TYPE','ONLINE','SPARE','TOTAL'],d.map((r,i)=>[i+1,r.type,r.online,r.spare,r.online+r.spare]),'ELQ_Summary_'+s.toUpperCase());}
-function csvSum(s){const d=SUM[s];doCsv(['#','TYPE','ONLINE','SPARE','TOTAL'],d.map((r,i)=>[i+1,r.type,r.online,r.spare,r.online+r.spare]),'ELQ_Summary_'+s.toUpperCase());}
-function cabinetRows(){return [...document.querySelectorAll('#cabinet-table tbody tr')].map(row=>[...row.cells].map(cell=>cell.textContent.trim()));}
-function xlsxCabinets(){if(typeof XLSX==='undefined'){alert('Loading…');return;}doXlsx(['ASSET TAG','NODE','SERIAL','EQUIPMENT TYPE','MODEL','ROOM'],cabinetRows(),'ELQ_Cabinets');}
-function csvCabinets(){doCsv(['ASSET TAG','NODE','SERIAL','EQUIPMENT TYPE','MODEL','ROOM'],cabinetRows(),'ELQ_Cabinets');}
-function doCsv(h,rows,name){const BOM='\uFEFF';const csv=BOM+[h,...rows].map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(';')).join('\r\n');dl(name+'_'+today()+'.csv','text/csv;charset=utf-8',csv);}
-function doXlsx(h,rows,name){const ws=XLSX.utils.aoa_to_sheet([h,...rows]);ws['!cols']=h.map(()=>({wch:22}));const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Data');XLSX.writeFile(wb,name+'_'+today()+'.xlsx');}
-function dl(n,t,c){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:t}));a.download=n;a.click();}
+// Every export goes through one spec: {file, title, sheet, cols:[{h,num,code,sita}], rows, band, totals}
+// - band: column index whose value change starts a new zebra band (keeps a node's assets together)
+// - totals: rows appended after a blank row in Excel only (CSV stays raw data)
+const blank = v => (v == null || v === '—') ? '' : v;
+const SHEET = {
+  navy:'FF0B1B2D', head:'FF1F4E79', band:'FFEAF2FB', line:'FFB4C6DC', sub:'FF5A7A9A',
+  sita:'FFC55A11', total:'FFFFF2CC', white:'FFFFFFFF'
+};
+
+function grpSpec(g, term){
+  const hasLoc = g.nodes.some(n => g.getA(n).some(a => a.loc));
+  const rows = [];
+  g.nodes.forEach(n => g.getA(n).forEach(a => rows.push(
+    [n, blank(a.ip), blank(a.type), blank(a.model), blank(a.sn), blank(a.xid)].concat(hasLoc ? [blank(a.loc)] : [])
+  )));
+  return {file:`ELQ_${term}_${g.name}`, sheet:g.name, title:`${term} · ${g.name} — ${g.desc} (${g.loc})`, band:0, rows,
+    cols:[{h:'NODE',code:1},{h:'IP ADDRESS',code:1},{h:'TYPE'},{h:'MODEL'},{h:'SERIAL NUMBER',code:1},{h:'SITA TAG',code:1,sita:1}]
+      .concat(hasLoc ? [{h:'LOCATION'}] : [])};
+}
+function fidsSpec(s){
+  const d = (s==='f1' ? FIDS1 : FIDS2).slice().sort((a,b) => a.group.localeCompare(b.group) || a.node.localeCompare(b.node));
+  const term = s==='f1' ? 'ELQ-1' : 'ELQ-2';
+  return {file:`ELQ_FIDS_${term}`, sheet:`FIDS ${term}`, title:`FIDS · ${term} — ${d.length} screens (${s==='f1'?'LG Digital Signage':'NEC'})`, band:0,
+    cols:[{h:'GROUP',code:1},{h:'NODE',code:1},{h:'IP ADDRESS',code:1},{h:'LOCATION'},{h:'SERIAL NUMBER',code:1},{h:'SITA TAG',code:1,sita:1},{h:'MODEL'},{h:'SWITCH',code:1},{h:'PORT',num:1}],
+    rows:d.map(r => { const sw = NODE_SW[r.node] || {}; return [r.group, r.node, blank(r.ip), blank(r.loc), blank(r.sn), blank(r.xid), r.model, blank(sw.sw), sw.port == null ? '' : sw.port]; })};
+}
+function invSpec(){
+  const rows = [], totals = [];
+  Object.entries(INV_TERMS).forEach(([term,t]) => {
+    [...t.data].sort((a,b) => b.assets - a.assets).forEach(d => {
+      const g = invGroup(term, d.cat);
+      rows.push([term, d.cat, g ? g.desc : (CORE_CAT_DESC[d.cat] || ''), d.loc, g ? g.nodes.length : '', d.assets]);
+    });
+    totals.push([`${term} total`, '', '', '', '', invSum(t.data)]);
+  });
+  INV_SPARE.forEach(d => rows.push(['Spare', d.cat, 'Spare stock', d.loc, '', d.assets]));
+  totals.push(['Grand total', '', '', '', '', invSum(INV_E1) + invSum(INV_E2) + invSum(INV_SPARE)]);
+  return {file:'ELQ_Inventory', sheet:'Inventory', title:'ELQ Airport — Inventory by terminal and category', band:0, rows, totals,
+    cols:[{h:'TERMINAL'},{h:'CATEGORY',code:1},{h:'DESCRIPTION'},{h:'LOCATION'},{h:'NODES',num:1},{h:'ASSETS',num:1}]};
+}
+const SUM_TITLES = {cute:'CUTE equipment', pfm:'PFM', fidsams:'FIDS / AMS', egate:'E-Gates'};
+function sumSpec(s){
+  const d = SUM[s];
+  const on = d.reduce((a,r) => a + r.online, 0), sp = d.reduce((a,r) => a + r.spare, 0);
+  return {file:`ELQ_Summary_${s.toUpperCase()}`, sheet:SUM_TITLES[s], title:`Equipment summary — ${SUM_TITLES[s]}`,
+    cols:[{h:'#',num:1},{h:'TYPE'},{h:'ONLINE',num:1},{h:'SPARE',num:1},{h:'TOTAL',num:1}],
+    rows:d.map((r,i) => [i+1, r.type, r.online, r.spare, r.online + r.spare]), totals:[['', 'Total', on, sp, on + sp]]};
+}
+function cabSpec(){
+  const rows = [...document.querySelectorAll('#cabinet-table tbody tr')]
+    .map(row => [...row.cells].map(c => blank(c.textContent.trim())))
+    .map(([tag,node,sn,type,model,room]) => [room, type, node, model, sn, tag]);
+  return {file:'ELQ_Cabinets', sheet:'Cabinets', title:'ELQ-1 Core Room — Cabinet equipment', band:1, rows,
+    cols:[{h:'ROOM'},{h:'EQUIPMENT TYPE'},{h:'NODE',code:1},{h:'MODEL'},{h:'SERIAL NUMBER',code:1},{h:'SITA TAG',code:1,sita:1}]};
+}
+
+function doCsv(spec){
+  const q = c => '"' + String(c).replace(/"/g,'""') + '"';
+  const csv = '﻿' + [spec.cols.map(c => c.h), ...spec.rows].map(r => r.map(q).join(',')).join('\r\n');
+  dl(spec.file + '_' + today() + '.csv', 'text/csv;charset=utf-8', csv);
+}
+
+var _excelJs = null;
+function loadExcel(){
+  if (window.ExcelJS) return Promise.resolve();
+  if (!_excelJs) _excelJs = new Promise((ok, fail) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
+    s.onload = ok; s.onerror = () => { _excelJs = null; fail(); };
+    document.head.appendChild(s);
+  });
+  return _excelJs;
+}
+
+async function doXlsx(spec){
+  try { await loadExcel(); } catch (e) { alert('Could not load the Excel library. Check your connection and try again.'); return; }
+  const n = spec.cols.length, fill = argb => ({type:'pattern', pattern:'solid', fgColor:{argb}});
+  const border = {top:{style:'thin',color:{argb:SHEET.line}}, bottom:{style:'thin',color:{argb:SHEET.line}},
+                  left:{style:'thin',color:{argb:SHEET.line}}, right:{style:'thin',color:{argb:SHEET.line}}};
+  const wb = new ExcelJS.Workbook(); wb.creator = 'ELQ Airport IT';
+  const ws = wb.addWorksheet(spec.sheet.replace(/[\\\/?*\[\]:]/g,' ').slice(0,31), {views:[{state:'frozen', ySplit:3}]});
+
+  ws.mergeCells(1,1,1,n);
+  Object.assign(ws.getCell(1,1), {value:spec.title, font:{bold:true, size:14, color:{argb:SHEET.white}}, fill:fill(SHEET.navy), alignment:{vertical:'middle', indent:1}});
+  ws.getRow(1).height = 30;
+  ws.mergeCells(2,1,2,n);
+  Object.assign(ws.getCell(2,1), {value:`${spec.rows.length} rows · exported ${new Date().toLocaleString()}`, font:{italic:true, size:9, color:{argb:SHEET.sub}}, alignment:{indent:1}});
+
+  const hr = ws.getRow(3); hr.height = 22;
+  spec.cols.forEach((c,i) => Object.assign(hr.getCell(i+1), {value:c.h, font:{bold:true, color:{argb:SHEET.white}}, fill:fill(SHEET.head), border,
+    alignment:{vertical:'middle', horizontal:c.num ? 'right' : 'left'}}));
+
+  let shade = false, prev;
+  spec.rows.forEach((r,ri) => {
+    if (spec.band != null) { if (ri && r[spec.band] !== prev) shade = !shade; prev = r[spec.band]; }
+    else shade = ri % 2 === 1;
+    const row = ws.addRow(r);
+    spec.cols.forEach((c,i) => {
+      const cell = row.getCell(i+1);
+      cell.border = border;
+      if (shade) cell.fill = fill(SHEET.band);
+      if (c.code) cell.font = {name:'Consolas', size:10};
+      if (c.sita) cell.font = {name:'Consolas', size:10, bold:true, color:{argb:SHEET.sita}};
+      cell.alignment = {vertical:'middle', horizontal:c.num ? 'right' : 'left'};
+    });
+  });
+  ws.autoFilter = {from:{row:3, column:1}, to:{row:3, column:n}};
+
+  if (spec.totals) {
+    ws.addRow([]);
+    spec.totals.forEach(t => {
+      const row = ws.addRow(t);
+      spec.cols.forEach((c,i) => Object.assign(row.getCell(i+1), {font:{bold:true}, fill:fill(SHEET.total), border,
+        alignment:{horizontal:c.num ? 'right' : 'left'}}));
+    });
+  }
+
+  spec.cols.forEach((c,i) => {
+    const len = Math.max(c.h.length, ...spec.rows.map(r => String(r[i] == null ? '' : r[i]).length));
+    ws.getColumn(i+1).width = Math.min(48, Math.max(8, len + 3));
+  });
+
+  const buf = await wb.xlsx.writeBuffer();
+  dl(spec.file + '_' + today() + '.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buf);
+}
+
+function expGrpXlsx(g){ doXlsx(grpSpec(g, curTerm)); }
+function expGrpCsv(g){ doCsv(grpSpec(g, curTerm)); }
+function xlsxF(s){ doXlsx(fidsSpec(s)); }
+function csvF(s){ doCsv(fidsSpec(s)); }
+function xlsxInv(){ doXlsx(invSpec()); }
+function csvInv(){ doCsv(invSpec()); }
+function xlsxSum(s){ doXlsx(sumSpec(s)); }
+function csvSum(s){ doCsv(sumSpec(s)); }
+function xlsxCabinets(){ doXlsx(cabSpec()); }
+function csvCabinets(){ doCsv(cabSpec()); }
+// Inside the claude.ai viewer the page is sandboxed, so files go through the
+// viewer's "downloads" capability; on the normal site a plain link download works.
+var _dlCap = null;
+async function dl(n,t,c){
+  const blob = new Blob([c],{type:t});
+  if (window.claude && typeof window.claude.use === 'function') {
+    _dlCap = _dlCap || window.claude.use('downloads').catch(() => null);
+    const d = await _dlCap;
+    if (d) {
+      try { await d.save({filename:n, data:blob}); }
+      catch (e) { if (!e || e.code !== 'declined') alert('Download not available here (' + ((e && e.code) || 'error') + ').'); }
+      return;
+    }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = n; a.rel = 'noopener';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
 function today(){return new Date().toISOString().slice(0,10);}
-(function(){const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';document.head.appendChild(s);})();
 
 
 
@@ -1190,7 +1641,7 @@ setTimeout(updateDrawerTop, 200);
   });
 
   // Hover: scale ring
-  var hoverSel='button,a,[onclick],.grp,.grp-node-card,.tcard,.ql,.mcard,.nt';
+  var hoverSel='button,a,[onclick],.grp,.nc,.pf-tile,.cat-card,.inv-big,.fsec-hdr,.tcard,.ql,.mcard,.nt';
   document.addEventListener('mouseover',function(e){
     if(e.target.closest(hoverSel)){
       ring.style.width='42px'; ring.style.height='42px';

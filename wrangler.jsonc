@@ -1,7 +1,21 @@
 {
-  "name": "elq-it-dashboard",
+  "name": "elq-it-dashboard1",
   "compatibility_date": "2026-09-21",
   "assets": {
     "directory": "./public"
+  },
+  "previews": {},
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "persist": true
+    },
+    "traces": {
+      "enabled": false,
+      "head_sampling_rate": 1,
+      "persist": true
+    }
   }
 }
